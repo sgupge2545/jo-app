@@ -123,7 +123,7 @@ ${currentCss}
   return (
     <div className="page-container">
       <div className="header">
-        <h1>AIページ修正ツール</h1>
+        <h1>ページ修正</h1>
         <p>プロンプトを入力して、ページを修正してください</p>
         <Link href="/" className="back-link">
           ← TOPページに戻る

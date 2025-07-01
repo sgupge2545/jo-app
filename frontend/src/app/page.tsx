@@ -14,7 +14,7 @@ const DEFAULT_PAGE_DATA: PageData = {
   title: "佐賀大学",
   html_content: `
     <header style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); padding: 30px; text-align: center; color: white;">
-      <h1 style="margin: 0; font-size: 3rem; font-weight: bold;">佐賀大学</h1>
+      <h1 style="margin: 0; font-size: 3rem; font-weight: bold; color: white;">佐賀大学</h1>
       <p style="font-size: 1.2rem; margin: 10px 0 0 0; opacity: 0.9;">Saga University</p>
       <p style="margin: 15px 0 0 0; font-size: 1rem;">地域と共に、未来を創造する</p>
     </header>
@@ -361,7 +361,7 @@ export default function Home() {
             e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.15)";
           }}
         >
-          ✏️ ページ修正ツール
+          ✏️ ページ修正
         </a>
       </div>
 
