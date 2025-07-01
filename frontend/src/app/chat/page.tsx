@@ -82,16 +82,13 @@ ${currentCss}
 上記の現在のページに対して、修正要求に従ってページを修正してください。
 `;
 
-      const response = await fetch(
-        "https://stuext.ai.is.saga-u.ac.jp:8080/api/generate-page",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ prompt: enhancedPrompt }),
-        }
-      );
+      const response = await fetch("/~s23238268/api-proxy.php", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ prompt: enhancedPrompt }),
+      });
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);

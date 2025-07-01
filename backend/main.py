@@ -6,6 +6,7 @@ import json
 import os
 import re
 import httpx
+import asyncio
 from dotenv import load_dotenv
 
 # ========================
@@ -41,33 +42,89 @@ class PageRequest(BaseModel):
 # ========================
 #  Gemini API 共通ユーティリティ
 # ========================
-async def _post_to_gemini(payload: Dict[str, Any]) -> Dict[str, Any]:
+async def _post_to_gemini(
+    payload: Dict[str, Any], max_retries: int = 3
+) -> Dict[str, Any]:
     if not GEMINI_API_KEY:
         raise HTTPException(
             status_code=500, detail="GEMINI_API_KEY が設定されていません"
         )
 
+    print(f"[Debug] API Key exists: {bool(GEMINI_API_KEY)}")
+    print(f"[Debug] API Key length: {len(GEMINI_API_KEY) if GEMINI_API_KEY else 0}")
+    print(
+        f"[Debug] API Key prefix: {GEMINI_API_KEY[:10] if GEMINI_API_KEY else 'None'}..."
+    )
+
     url = f"{GEMINI_API_URL}?key={GEMINI_API_KEY}"
-    async with httpx.AsyncClient() as client:
-        resp = await client.post(
-            url, headers={"Content-Type": "application/json"}, json=payload, timeout=30
-        )
 
-    # --- デバッグ用ログ（必要であればコメントアウト） ---
-    # print("[Gemini] status", resp.status_code)
-    # print("[Gemini] body", resp.text[:500])
-    # ------------------------------------------------------
-
-    if resp.status_code != 200:
+    for attempt in range(max_retries):
         try:
-            detail = resp.json().get("error", {}).get("message", "")
-        except Exception:
-            detail = resp.text[:200]
-        raise HTTPException(
-            status_code=500, detail=f"Gemini API Error: {resp.status_code} - {detail}"
-        )
+            async with httpx.AsyncClient() as client:
+                resp = await client.post(
+                    url,
+                    headers={"Content-Type": "application/json"},
+                    json=payload,
+                    timeout=httpx.Timeout(
+                        60.0, connect=10.0
+                    ),  # タイムアウトを60秒に延長
+                )
 
-    return resp.json()
+            # --- デバッグ用ログ ---
+            print(f"[Gemini] attempt {attempt + 1}, status {resp.status_code}")
+            print(f"[Gemini] body {resp.text[:500]}")
+            # ------------------------------------------------------
+
+            if resp.status_code != 200:
+                try:
+                    error_data = resp.json()
+                    detail = error_data.get("error", {}).get("message", "")
+                    error_code = error_data.get("error", {}).get("code", "")
+                    print(f"[Debug] Gemini API Error Code: {error_code}")
+                    print(f"[Debug] Gemini API Error Detail: {detail}")
+
+                    # 使用量制限エラーの場合
+                    if (
+                        resp.status_code == 429
+                        or "quota" in detail.lower()
+                        or "limit" in detail.lower()
+                    ):
+                        raise HTTPException(
+                            status_code=429,
+                            detail="Gemini APIの使用量制限に達しました。しばらく時間をおいてから再試行してください。",
+                        )
+                except Exception:
+                    detail = resp.text[:200]
+                    print(f"[Debug] Raw error response: {resp.text}")
+
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Gemini API Error: {resp.status_code} - {detail}",
+                )
+
+            return resp.json()
+
+        except httpx.TimeoutException as e:
+            if attempt < max_retries - 1:
+                print(f"[Gemini] Timeout on attempt {attempt + 1}, retrying...")
+                await asyncio.sleep(2**attempt)  # 指数バックオフ
+                continue
+            else:
+                raise HTTPException(
+                    status_code=504,
+                    detail=f"Gemini API がタイムアウトしました（{max_retries}回試行後）。しばらく時間をおいてから再試行してください。",
+                )
+        except httpx.RequestError as e:
+            if attempt < max_retries - 1:
+                print(
+                    f"[Gemini] Request error on attempt {attempt + 1}: {e}, retrying..."
+                )
+                await asyncio.sleep(2**attempt)
+                continue
+            else:
+                raise HTTPException(
+                    status_code=503, detail=f"Gemini API への接続エラー: {str(e)}"
+                )
 
 
 def _extract_json(raw: str) -> str:
