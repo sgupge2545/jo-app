@@ -1,13 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-
-interface ChatMessage {
-  id: string;
-  text: string;
-  isUser: boolean;
-  timestamp: Date;
-}
+import Link from "next/link";
+import { useState, useEffect } from "react";
+import { Loader2 } from "lucide-react";
 
 interface PageData {
   title: string;
@@ -16,20 +11,35 @@ interface PageData {
 }
 
 export default function ChatPage() {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [inputText, setInputText] = useState("");
+  const [prompt, setPrompt] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState<PageData | null>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  // 自動スクロール
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
+  // 初期化時に現在のページデータを読み込み
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    const loadCurrentPage = () => {
+      try {
+        const savedHtml = localStorage.getItem("html_content");
+        const savedCss = localStorage.getItem("css_content");
+        const savedTitle = localStorage.getItem("title");
+
+        if (savedHtml && savedCss) {
+          const pageData: PageData = {
+            title: savedTitle || "現在のページ",
+            html_content: savedHtml,
+            css_content: savedCss,
+          };
+          setCurrentPage(pageData);
+          applyCSS(pageData.css_content);
+        }
+      } catch (error) {
+        console.error("現在のページデータの読み込みに失敗しました:", error);
+      }
+    };
+
+    loadCurrentPage();
+  }, []);
 
   // CSSを動的に適用する関数
   const applyCSS = (cssContent: string) => {
@@ -44,78 +54,63 @@ export default function ChatPage() {
     document.head.appendChild(style);
   };
 
-  // チャットメッセージを送信
-  const sendMessage = async () => {
-    if (!inputText.trim() || isLoading) return;
+  // ページを修正
+  const modifyPage = async () => {
+    if (!prompt.trim() || isLoading) return;
 
-    const userMessage: ChatMessage = {
-      id: Date.now().toString(),
-      text: inputText,
-      isUser: true,
-      timestamp: new Date(),
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
-    setInputText("");
     setIsLoading(true);
+    setError(null);
 
     try {
-      // チャットAPIを呼び出し
-      const chatResponse = await fetch("/api/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ message: inputText }),
-      });
+      // 現在のページ情報を取得
+      const currentHtml = localStorage.getItem("html_content") || "";
+      const currentCss = localStorage.getItem("css_content") || "";
+      const currentTitle = localStorage.getItem("title") || "";
 
-      const chatData = await chatResponse.json();
+      // 現在のページ情報を含めたプロンプトを作成
+      const enhancedPrompt = `
+現在のページ情報:
+タイトル: ${currentTitle}
 
-      // AIのレスポンスを追加
-      const aiMessage: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        text: chatData.response,
-        isUser: false,
-        timestamp: new Date(),
-      };
+HTML内容:
+${currentHtml}
 
-      setMessages((prev) => [...prev, aiMessage]);
+CSS内容:
+${currentCss}
 
-      // ページ生成を試行
-      try {
-        const pageResponse = await fetch("/api/generate-page", {
+修正要求: ${prompt}
+
+上記の現在のページに対して、修正要求に従ってページを修正してください。
+`;
+
+      const response = await fetch(
+        "http://stuext.ai.is.saga-u.ac.jp:8080/generate-page",
+        {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ prompt: inputText }),
-        });
+          body: JSON.stringify({ prompt: enhancedPrompt }),
+        }
+      );
 
-        const pageData = await pageResponse.json();
-        setCurrentPage(pageData);
-        applyCSS(pageData.css_content);
-
-        // ページ生成完了のメッセージを追加
-        const pageMessage: ChatMessage = {
-          id: (Date.now() + 2).toString(),
-          text: "ページを生成しました！下のプレビューで確認できます。",
-          isUser: false,
-          timestamp: new Date(),
-        };
-
-        setMessages((prev) => [...prev, pageMessage]);
-      } catch (pageError) {
-        console.error("ページ生成エラー:", pageError);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
+
+      const pageData: PageData = await response.json();
+      setCurrentPage(pageData);
+      applyCSS(pageData.css_content);
+
+      // ローカルストレージに保存
+      localStorage.setItem("html_content", pageData.html_content);
+      localStorage.setItem("css_content", pageData.css_content);
+      localStorage.setItem("title", pageData.title);
+
+      setPrompt(""); // プロンプトをクリア
     } catch (error) {
-      console.error("チャットエラー:", error);
-      const errorMessage: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        text: "エラーが発生しました。もう一度お試しください。",
-        isUser: false,
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, errorMessage]);
+      console.error("ページ修正エラー:", error);
+      setError("ページの修正に失敗しました。もう一度お試しください。");
     } finally {
       setIsLoading(false);
     }
@@ -125,335 +120,241 @@ export default function ChatPage() {
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      sendMessage();
+      modifyPage();
     }
   };
 
   return (
-    <div className="chat-container">
-      <div className="chat-header">
-        <h1>AIページ生成チャット</h1>
-        <p>AIとチャットして、美しいWebページを作成しましょう</p>
+    <div className="page-container">
+      <div className="header">
+        <h1>AIページ修正ツール</h1>
+        <p>プロンプトを入力して、ページを修正してください</p>
+        <Link href="/" className="back-link">
+          ← TOPページに戻る
+        </Link>
       </div>
 
-      <div className="chat-layout">
-        {/* チャットエリア */}
-        <div className="chat-area">
-          <div className="messages">
-            {messages.length === 0 && (
-              <div className="welcome-message">
-                <h3>ようこそ！</h3>
-                <p>どのようなページを作成したいですか？</p>
-                <div className="suggestions">
-                  <button
-                    onClick={() =>
-                      setInputText(
-                        "モダンなランディングページを作成してください"
-                      )
-                    }
-                  >
-                    モダンなランディングページ
-                  </button>
-                  <button
-                    onClick={() =>
-                      setInputText(
-                        "ダークテーマのポートフォリオページを作成してください"
-                      )
-                    }
-                  >
-                    ダークテーマのポートフォリオ
-                  </button>
-                  <button
-                    onClick={() =>
-                      setInputText("ミニマルなブログページを作成してください")
-                    }
-                  >
-                    ミニマルなブログページ
-                  </button>
-                </div>
-              </div>
-            )}
+      <div className="input-section">
+        <div className="input-container">
+          <textarea
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            onKeyPress={handleKeyPress}
+            placeholder="例: 色を青系に変更してください、フォントサイズを大きくしてください、レイアウトを2カラムにしてください...（現在のページを基に修正されます）"
+            disabled={isLoading}
+            className="prompt-input"
+          />
+          <button
+            onClick={modifyPage}
+            disabled={!prompt.trim() || isLoading}
+            className="modify-button"
+          >
+            {isLoading ? "修正中..." : "ページを修正"}
+          </button>
+        </div>
 
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`message ${message.isUser ? "user" : "ai"}`}
-              >
-                <div className="message-content">
-                  <p>{message.text}</p>
-                  <span className="timestamp">
-                    {message.timestamp.toLocaleTimeString()}
-                  </span>
-                </div>
-              </div>
-            ))}
+        {error && <div className="error-message">{error}</div>}
+      </div>
 
-            {isLoading && (
-              <div className="message ai">
-                <div className="message-content">
-                  <div className="loading-dots">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div ref={messagesEndRef} />
+      <div className="preview-section">
+        <h3>ページプレビュー</h3>
+        {isLoading ? (
+          <div className="loading-container">
+            <Loader2 className="loading-spinner" />
+            <p>ページを修正中...</p>
           </div>
-
-          <div className="input-area">
-            <textarea
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="どのようなページを作成したいですか？"
-              disabled={isLoading}
+        ) : currentPage ? (
+          <div className="preview-content">
+            <div
+              dangerouslySetInnerHTML={{ __html: currentPage.html_content }}
             />
-            <button
-              onClick={sendMessage}
-              disabled={!inputText.trim() || isLoading}
-              className="send-button"
-            >
-              送信
-            </button>
           </div>
-        </div>
-
-        {/* プレビューエリア */}
-        <div className="preview-area">
-          <h3>ページプレビュー</h3>
-          {currentPage ? (
-            <div className="preview-content">
-              <div
-                dangerouslySetInnerHTML={{ __html: currentPage.html_content }}
-              />
-            </div>
-          ) : (
-            <div className="preview-placeholder">
-              <p>
-                チャットでページを生成すると、ここにプレビューが表示されます
-              </p>
-            </div>
-          )}
-        </div>
+        ) : (
+          <div className="preview-placeholder">
+            <p>
+              プロンプトを入力してページを修正すると、ここにプレビューが表示されます
+            </p>
+          </div>
+        )}
       </div>
 
       <style jsx>{`
-        .chat-container {
-          max-width: 1400px;
+        .page-container {
+          max-width: 1200px;
           margin: 0 auto;
           padding: 20px;
-          height: 100vh;
-          display: flex;
-          flex-direction: column;
+          min-height: 100vh;
         }
 
-        .chat-header {
+        .header {
           text-align: center;
-          margin-bottom: 20px;
+          margin-bottom: 30px;
         }
 
-        .chat-header h1 {
+        .header h1 {
           color: #333;
           margin-bottom: 10px;
+          font-size: 2.5rem;
         }
 
-        .chat-header p {
+        .header p {
           color: #666;
+          font-size: 1.1rem;
+          margin-bottom: 15px;
         }
 
-        .chat-layout {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 20px;
-          flex: 1;
-          min-height: 0;
-        }
-
-        .chat-area {
-          display: flex;
-          flex-direction: column;
-          border: 1px solid #e0e0e0;
-          border-radius: 10px;
-          background: white;
-        }
-
-        .messages {
-          flex: 1;
-          overflow-y: auto;
-          padding: 20px;
-        }
-
-        .welcome-message {
-          text-align: center;
-          padding: 40px 20px;
-        }
-
-        .welcome-message h3 {
-          color: #333;
-          margin-bottom: 10px;
-        }
-
-        .suggestions {
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-          margin-top: 20px;
-        }
-
-        .suggestions button {
-          padding: 10px 15px;
-          border: 1px solid #007bff;
-          background: white;
+        .back-link {
+          display: inline-block;
           color: #007bff;
-          border-radius: 5px;
-          cursor: pointer;
+          text-decoration: none;
+          font-weight: bold;
+          padding: 8px 16px;
+          border: 2px solid #007bff;
+          border-radius: 6px;
           transition: all 0.3s ease;
         }
 
-        .suggestions button:hover {
+        .back-link:hover {
           background: #007bff;
           color: white;
         }
 
-        .message {
+        .input-section {
+          margin-bottom: 30px;
+        }
+
+        .input-container {
+          display: flex;
+          gap: 15px;
           margin-bottom: 15px;
-          display: flex;
         }
 
-        .message.user {
-          justify-content: flex-end;
-        }
-
-        .message-content {
-          max-width: 70%;
-          padding: 12px 16px;
-          border-radius: 15px;
-          position: relative;
-        }
-
-        .message.user .message-content {
-          background: #007bff;
-          color: white;
-          border-bottom-right-radius: 5px;
-        }
-
-        .message.ai .message-content {
-          background: #f1f3f4;
-          color: #333;
-          border-bottom-left-radius: 5px;
-        }
-
-        .timestamp {
-          font-size: 0.7rem;
-          opacity: 0.7;
-          margin-top: 5px;
-          display: block;
-        }
-
-        .loading-dots {
-          display: flex;
-          gap: 4px;
-        }
-
-        .loading-dots span {
-          width: 8px;
-          height: 8px;
-          background: #666;
-          border-radius: 50%;
-          animation: bounce 1.4s infinite ease-in-out;
-        }
-
-        .loading-dots span:nth-child(1) {
-          animation-delay: -0.32s;
-        }
-        .loading-dots span:nth-child(2) {
-          animation-delay: -0.16s;
-        }
-
-        @keyframes bounce {
-          0%,
-          80%,
-          100% {
-            transform: scale(0);
-          }
-          40% {
-            transform: scale(1);
-          }
-        }
-
-        .input-area {
-          display: flex;
-          padding: 20px;
-          border-top: 1px solid #e0e0e0;
-          gap: 10px;
-        }
-
-        .input-area textarea {
+        .prompt-input {
           flex: 1;
-          padding: 12px;
-          border: 1px solid #ddd;
-          border-radius: 8px;
-          resize: none;
-          height: 50px;
+          padding: 15px;
+          border: 2px solid #e0e0e0;
+          border-radius: 10px;
+          resize: vertical;
+          min-height: 80px;
           font-family: inherit;
+          font-size: 1rem;
+          transition: border-color 0.3s ease;
         }
 
-        .send-button {
-          padding: 12px 24px;
+        .prompt-input:focus {
+          outline: none;
+          border-color: #007bff;
+        }
+
+        .prompt-input:disabled {
+          background-color: #f5f5f5;
+          cursor: not-allowed;
+        }
+
+        .modify-button {
+          padding: 15px 30px;
           background: #007bff;
           color: white;
           border: none;
-          border-radius: 8px;
+          border-radius: 10px;
           cursor: pointer;
+          font-size: 1rem;
+          font-weight: bold;
           transition: background 0.3s ease;
+          white-space: nowrap;
         }
 
-        .send-button:hover:not(:disabled) {
+        .modify-button:hover:not(:disabled) {
           background: #0056b3;
         }
 
-        .send-button:disabled {
+        .modify-button:disabled {
           background: #ccc;
           cursor: not-allowed;
         }
 
-        .preview-area {
-          border: 1px solid #e0e0e0;
-          border-radius: 10px;
-          background: white;
-          display: flex;
-          flex-direction: column;
+        .error-message {
+          background: #f8d7da;
+          color: #721c24;
+          padding: 15px;
+          border-radius: 8px;
+          border: 1px solid #f5c6cb;
         }
 
-        .preview-area h3 {
+        .preview-section {
+          border: 2px solid #e0e0e0;
+          border-radius: 15px;
+          background: white;
+          overflow: hidden;
+        }
+
+        .preview-section h3 {
           padding: 20px;
           margin: 0;
           border-bottom: 1px solid #e0e0e0;
           color: #333;
+          background: #f8f9fa;
+        }
+
+        .loading-container {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 60px 20px;
+          min-height: 400px;
+          background: #f8f9fa;
+        }
+
+        .loading-spinner {
+          width: 48px;
+          height: 48px;
+          color: #007bff;
+          animation: spin 1s linear infinite;
+          margin-bottom: 16px;
+        }
+
+        .loading-container p {
+          color: #666;
+          font-size: 1.1rem;
+          margin: 0;
+        }
+
+        @keyframes spin {
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
+          }
         }
 
         .preview-content {
-          flex: 1;
-          overflow-y: auto;
-          padding: 0;
+          min-height: 400px;
         }
 
         .preview-placeholder {
-          flex: 1;
           display: flex;
           align-items: center;
           justify-content: center;
           color: #666;
           text-align: center;
-          padding: 40px;
+          padding: 60px 20px;
+          min-height: 400px;
+          background: #f8f9fa;
         }
 
         @media (max-width: 768px) {
-          .chat-layout {
-            grid-template-columns: 1fr;
+          .input-container {
+            flex-direction: column;
+          }
+
+          .modify-button {
+            width: 100%;
+          }
+
+          .header h1 {
+            font-size: 2rem;
           }
         }
       `}</style>
