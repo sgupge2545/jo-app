@@ -50,12 +50,6 @@ async def _post_to_gemini(
             status_code=500, detail="GEMINI_API_KEY が設定されていません"
         )
 
-    print(f"[Debug] API Key exists: {bool(GEMINI_API_KEY)}")
-    print(f"[Debug] API Key length: {len(GEMINI_API_KEY) if GEMINI_API_KEY else 0}")
-    print(
-        f"[Debug] API Key prefix: {GEMINI_API_KEY[:10] if GEMINI_API_KEY else 'None'}..."
-    )
-
     url = f"{GEMINI_API_URL}?key={GEMINI_API_KEY}"
 
     for attempt in range(max_retries):
@@ -70,18 +64,11 @@ async def _post_to_gemini(
                     ),  # タイムアウトを60秒に延長
                 )
 
-            # --- デバッグ用ログ ---
-            print(f"[Gemini] attempt {attempt + 1}, status {resp.status_code}")
-            print(f"[Gemini] body {resp.text[:500]}")
-            # ------------------------------------------------------
-
             if resp.status_code != 200:
                 try:
                     error_data = resp.json()
                     detail = error_data.get("error", {}).get("message", "")
                     error_code = error_data.get("error", {}).get("code", "")
-                    print(f"[Debug] Gemini API Error Code: {error_code}")
-                    print(f"[Debug] Gemini API Error Detail: {detail}")
 
                     # 使用量制限エラーの場合
                     if (
@@ -95,7 +82,6 @@ async def _post_to_gemini(
                         )
                 except Exception:
                     detail = resp.text[:200]
-                    print(f"[Debug] Raw error response: {resp.text}")
 
                 raise HTTPException(
                     status_code=500,
@@ -106,7 +92,6 @@ async def _post_to_gemini(
 
         except httpx.TimeoutException as e:
             if attempt < max_retries - 1:
-                print(f"[Gemini] Timeout on attempt {attempt + 1}, retrying...")
                 await asyncio.sleep(2**attempt)  # 指数バックオフ
                 continue
             else:
@@ -116,9 +101,6 @@ async def _post_to_gemini(
                 )
         except httpx.RequestError as e:
             if attempt < max_retries - 1:
-                print(
-                    f"[Gemini] Request error on attempt {attempt + 1}: {e}, retrying..."
-                )
                 await asyncio.sleep(2**attempt)
                 continue
             else:

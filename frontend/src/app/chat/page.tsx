@@ -82,7 +82,7 @@ ${currentCss}
 上記の現在のページに対して、修正要求に従ってページを修正してください。
 `;
 
-      const response = await fetch("/~s23238268/api-proxy.php", {
+      const response = await fetch("/~s23238268/generate-page-proxy.php", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
