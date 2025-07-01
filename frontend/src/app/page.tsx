@@ -171,6 +171,8 @@ const DEFAULT_PAGE_DATA: PageData = {
       opacity: 0.8;
     }
     
+
+    
     .grid-container {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -324,6 +326,44 @@ export default function Home() {
     <div>
       {/* タイトルをページタイトルとして設定 */}
       <title>{data.title}</title>
+
+      {/* 固定のページ修正ツールリンク */}
+      <div
+        style={{
+          position: "fixed",
+          top: "20px",
+          right: "20px",
+          zIndex: 1000,
+        }}
+      >
+        <a
+          href="https://stuext.ai.is.saga-u.ac.jp/~s23238268/chat"
+          style={{
+            display: "inline-block",
+            background: "rgba(255, 255, 255, 0.9)",
+            color: "#1e3c72",
+            padding: "12px 20px",
+            textDecoration: "none",
+            borderRadius: "25px",
+            fontWeight: "bold",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+            transition: "all 0.3s ease",
+            backdropFilter: "blur(10px)",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "rgba(255, 255, 255, 1)";
+            e.currentTarget.style.transform = "translateY(-2px)";
+            e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.2)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "rgba(255, 255, 255, 0.9)";
+            e.currentTarget.style.transform = "translateY(0)";
+            e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.15)";
+          }}
+        >
+          ✏️ ページ修正ツール
+        </a>
+      </div>
 
       {/* AIが生成したHTMLコンテンツを動的にレンダリング */}
       <div dangerouslySetInnerHTML={{ __html: data.html_content }} />

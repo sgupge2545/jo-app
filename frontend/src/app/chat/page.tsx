@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { Loader2 } from "lucide-react";
 
 interface PageData {
   title: string;
@@ -84,7 +83,7 @@ ${currentCss}
 `;
 
       const response = await fetch(
-        "http://stuext.ai.is.saga-u.ac.jp:8080/generate-page",
+        "https://stuext.ai.is.saga-u.ac.jp:8080/api/generate-page",
         {
           method: "POST",
           headers: {
@@ -160,7 +159,7 @@ ${currentCss}
         <h3>ページプレビュー</h3>
         {isLoading ? (
           <div className="loading-container">
-            <Loader2 className="loading-spinner" />
+            <div className="loading-spinner"></div>
             <p>ページを修正中...</p>
           </div>
         ) : currentPage ? (
@@ -309,7 +308,9 @@ ${currentCss}
         .loading-spinner {
           width: 48px;
           height: 48px;
-          color: #007bff;
+          border: 4px solid #f3f3f3;
+          border-top: 4px solid #007bff;
+          border-radius: 50%;
           animation: spin 1s linear infinite;
           margin-bottom: 16px;
         }

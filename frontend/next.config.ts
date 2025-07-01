@@ -4,7 +4,7 @@ const nextConfig: NextConfig = {
   output: "export",
   trailingSlash: true,
   assetPrefix: "",
-  basePath: "",
+  basePath: process.env.NODE_ENV === "development" ? "" : "/~s23238268",
 };
 
 export default nextConfig;
