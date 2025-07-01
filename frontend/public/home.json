@@ -1,0 +1,14 @@
+{
+    "title": "ようこそ",
+    "sections": [
+        {
+            "type": "text",
+            "content": "これはテストです"
+        },
+        {
+            "type": "button",
+            "label": "クリックしてね",
+            "link": "/chat"
+        }
+    ]
+}
