@@ -35,7 +35,7 @@ if (!$data || !isset($data['prompt'])) {
 }
 
 // FastAPIサーバーにリクエストを転送
-$url = 'http://localhost:8080/api/generate-page';
+$url = 'http://127.0.0.1:8080/api/generate-page';
 
 
 $options = [
