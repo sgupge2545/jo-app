@@ -1,0 +1,56 @@
+Error with Permissions-Policy header: Unrecognized feature: 'browsing-topics'.
+page-815984b615264c9c.js:1 Mixed Content: The page at 'https://stuext.ai.is.saga-u.ac.jp/~s23238268/chat/' was loaded over HTTPS, but requested an insecure resource 'http://stuext.ai.is.saga-u.ac.jp:8080/generate-page'. This request has been blocked; the content must be served over HTTPS.
+p @ page-815984b615264c9c.js:1
+iX @ fdc226ae-6d5d88cd7cb8205c.js:1
+(anonymous) @ fdc226ae-6d5d88cd7cb8205c.js:1
+nS @ fdc226ae-6d5d88cd7cb8205c.js:1
+i2 @ fdc226ae-6d5d88cd7cb8205c.js:1
+s7 @ fdc226ae-6d5d88cd7cb8205c.js:1
+s5 @ fdc226ae-6d5d88cd7cb8205c.js:1
+97-df8a173de3d6e627.js:1 TypeError: Failed to fetch
+at p (page-815984b615264c9c.js:1:1155)
+at iX (fdc226ae-6d5d88cd7cb8205c.js:1:132393)
+at fdc226ae-6d5d88cd7cb8205c.js:1:138471
+at nS (fdc226ae-6d5d88cd7cb8205c.js:1:18811)
+at i2 (fdc226ae-6d5d88cd7cb8205c.js:1:133626)
+at s7 (fdc226ae-6d5d88cd7cb8205c.js:1:159676)
+at s5 (fdc226ae-6d5d88cd7cb8205c.js:1:159498)
+
+hypercorn main:app --bind 0.0.0.0:8080 --reload --certfile cert.pem --keyfile key.pem
+
+(venv) [s23238268@stuext ~/public_html/api]$ hypercorn main:app --bind 0.0.0.0:8081 --reload --certfile cert.pem --keyfile key.pem
+[2025-07-02 13:54:04 +0900] [30260] [INFO] Running on https://0.0.0.0:8081 (CTRL + C to quit)
+
+Error with Permissions-Policy header: Unrecognized feature: 'browsing-topics'.
+POST https://stuext.ai.is.saga-u.ac.jp:8080/generate-page 
+net::ERR_CERT_AUTHORITY_INVALID
+
+Internal Server Error
+The server encountered an internal error or misconfiguration and was unable to complete your request.
+
+Please contact the server administrator at root@stuext.ai.is.saga-u.ac.jp to inform them of the time this error occurred, and the actions you performed just before this error.
+
+More information about this error may be available in the server error log.
+
+
+# APIリクエストをリバースプロキシで転送
+RewriteEngine On
+
+# /api/ で始まるリクエストをFastAPIサーバーに転送
+RewriteCond %{REQUEST_URI} ^/api/
+RewriteRule ^api/(.*)$ http://localhost:8080/api/$1 [P,L]
+
+# プロキシヘッダーを設定
+ProxyPreserveHost On
+ProxyPassReverse /api/ http://localhost:8080/api/
+
+# セキュリティヘッダー
+Header always set X-Content-Type-Options nosniff
+Header always set X-Frame-Options DENY
+Header always set X-XSS-Protection "1; mode=block" 
+
+
+
+s23238268@stuext:/var/log % tail -20 /var/log/httpd-error.log
+[Tue Jul 01 18:47:51.104542 2025] [core:alert] [pid 19458] [client 133.49.16.195:2991] /home/s23238268/public_html/.htaccess: Invalid command 'RewriteEngine', perhaps misspelled or defined by a module not included in the server configuration
+[Tue Jul 01 18:47:57.777119 2025] [core:alert] [pid 19356] [client 133.49.16.195:33664] /home/s23238268/public_html/.htaccess: Invalid command 'RewriteEngine', perhaps misspelled or defined by a module not included in the server configuration
