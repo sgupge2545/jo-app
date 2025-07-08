@@ -1,13 +1,17 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Dict, Any
+from typing import Dict, Any, Optional, List
 import json
 import os
 import re
 import httpx
 import asyncio
 from dotenv import load_dotenv
+from database import (
+    init_database,
+    search_lectures,
+)
 
 # ========================
 #  環境変数のロード
@@ -19,6 +23,9 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1alpha/models/gemini-2.5-flash:generateContent"
 
 app = FastAPI()
+
+# データベースを初期化
+init_database()
 
 # ------------------------------------------------------------
 #  CORS 設定（必要に応じて allow_origins を限定してください）
@@ -37,6 +44,19 @@ app.add_middleware(
 # ========================
 class PageRequest(BaseModel):
     prompt: str
+
+
+class LectureResponse(BaseModel):
+    id: int
+    title: Optional[str] = None
+    category: Optional[str] = None
+    code: Optional[str] = None
+    name: Optional[str] = None
+    lecturer: Optional[str] = None
+    grade: Optional[str] = None
+    class_name: Optional[str] = None
+    season: Optional[str] = None
+    time: Optional[str] = None
 
 
 # ========================
@@ -189,3 +209,35 @@ def root():
 async def generate_page(request: PageRequest):
     """フロントエンドからのリクエストを受け取り、Gemini で HTML/CSS を生成して返す"""
     return await generate_page_with_ai(request.prompt)
+
+
+# ========================
+#  講義検索API
+# ========================
+@app.get("/api/lectures", response_model=List[LectureResponse])
+def get_lectures(
+    title: Optional[str] = Query(None, description="タイトルでフィルタリング"),
+    category: Optional[str] = Query(None, description="カテゴリでフィルタリング"),
+    code: Optional[str] = Query(None, description="科目コードでフィルタリング"),
+    name: Optional[str] = Query(None, description="科目名でフィルタリング"),
+    lecturer: Optional[str] = Query(None, description="担当教員でフィルタリング"),
+    grade: Optional[str] = Query(None, description="学年でフィルタリング"),
+    class_name: Optional[str] = Query(None, description="クラスでフィルタリング"),
+    season: Optional[str] = Query(None, description="開講学期でフィルタリング"),
+    time: Optional[str] = Query(None, description="曜日・校時でフィルタリング"),
+    keyword: Optional[str] = Query(None, description="全フィールドでキーワード検索"),
+):
+    """講義を検索・フィルタリング"""
+    lectures = search_lectures(
+        title=title,
+        category=category,
+        code=code,
+        name=name,
+        lecturer=lecturer,
+        grade=grade,
+        class_name=class_name,
+        season=season,
+        time=time,
+        keyword=keyword,
+    )
+    return lectures
