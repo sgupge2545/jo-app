@@ -13,3 +13,17 @@ grade data-label="学年"
 class  data-label="クラス"
 season data-label="開講学期"
 time data-label="曜日・校時"
+
+
+(venv) tt1125@tsuruseishinoMacBook-Air jo-app % scp -r backend/* s23238268@stuext.ai.is.saga-u.ac.jp:~/public_html/api/
+(s23238268@stuext.ai.is.saga-u.ac.jp) Password for s23238268@stuext.ai.is.saga-u.ac.jp:
+README.md                    100% 1502    37.9KB/s   00:00    
+
+main.cpython-312.pyc         100% 9806   219.5KB/s   00:00    
+database.cpython-312.pyc     100% 6095   143.0KB/s   00:00    
+lectures.db                  100%  156KB 957.6KB/s   00:00    
+database.py                  100% 4782   120.8KB/s   00:00    
+import_data.py               100% 1690    38.2KB/s   00:00    
+main.py                      100% 8471   104.4KB/s   00:00    
+requirements.txt             100%  254     2.2KB/s   00:00    
+(venv) tt1125@tsuruseishinoMacBook-Air jo-app % 

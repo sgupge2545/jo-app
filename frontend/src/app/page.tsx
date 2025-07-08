@@ -334,6 +334,8 @@ export default function Home() {
           top: "20px",
           right: "20px",
           zIndex: 1000,
+          display: "flex",
+          gap: "10px",
         }}
       >
         <a
@@ -362,6 +364,33 @@ export default function Home() {
           }}
         >
           ✏️ ページ修正
+        </a>
+        <a
+          href="https://stuext.ai.is.saga-u.ac.jp/~s23238268/search-syllabus"
+          style={{
+            display: "inline-block",
+            background: "rgba(255, 255, 255, 0.9)",
+            color: "#1e3c72",
+            padding: "12px 20px",
+            textDecoration: "none",
+            borderRadius: "25px",
+            fontWeight: "bold",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+            transition: "all 0.3s ease",
+            backdropFilter: "blur(10px)",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "rgba(255, 255, 255, 1)";
+            e.currentTarget.style.transform = "translateY(-2px)";
+            e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.2)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "rgba(255, 255, 255, 0.9)";
+            e.currentTarget.style.transform = "translateY(0)";
+            e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.15)";
+          }}
+        >
+          🔍 シラバス検索
         </a>
       </div>
 
