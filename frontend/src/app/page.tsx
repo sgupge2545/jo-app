@@ -235,16 +235,31 @@ export default function Home() {
           const authData = await response.json();
           if (authData.authenticated) {
             setUser(authData.user);
+          } else {
+            setUser(null);
           }
+        } else {
+          setUser(null);
         }
       } catch (error) {
         console.error("認証チェックエラー:", error);
+        setUser(null);
       } finally {
         setAuthLoading(false);
       }
     };
 
     checkAuth();
+
+    // ページがフォーカスされた時にも認証状態を再チェック
+    const handleFocus = () => {
+      checkAuth();
+    };
+
+    window.addEventListener("focus", handleFocus);
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+    };
   }, []);
 
   useEffect(() => {

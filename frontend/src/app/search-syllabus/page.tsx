@@ -157,7 +157,21 @@ export default function SearchSyllabus() {
 
   // 未認証の場合は何も表示しない（リダイレクト中）
   if (!user) {
-    return null;
+    return (
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+          fontSize: "1.2rem",
+          fontFamily:
+            "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+        }}
+      >
+        認証を確認中...
+      </div>
+    );
   }
 
   return (
