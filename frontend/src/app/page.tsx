@@ -212,10 +212,40 @@ const DEFAULT_PAGE_DATA: PageData = {
   `,
 };
 
+interface User {
+  id: string;
+  username: string;
+  email: string;
+  login_time: number;
+}
+
 export default function Home() {
   const [data, setData] = useState<PageData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+
+  // 認証状態をチェック
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const response = await fetch("/~s23238268/auth.php?action=check");
+        if (response.ok) {
+          const authData = await response.json();
+          if (authData.authenticated) {
+            setUser(authData.user);
+          }
+        }
+      } catch (error) {
+        console.error("認証チェックエラー:", error);
+      } finally {
+        setAuthLoading(false);
+      }
+    };
+
+    checkAuth();
+  }, []);
 
   useEffect(() => {
     // ローカルストレージからページデータを取得
@@ -327,7 +357,98 @@ export default function Home() {
       {/* タイトルをページタイトルとして設定 */}
       <title>{data.title}</title>
 
-      {/* 固定のページ修正ツールリンク */}
+      {/* 左上のユーザーメニュー */}
+      <div
+        style={{
+          position: "fixed",
+          top: "20px",
+          left: "20px",
+          zIndex: 1000,
+          display: "flex",
+          gap: "10px",
+          alignItems: "center",
+        }}
+      >
+        {!authLoading && user ? (
+          // ログイン済みの場合：ユーザー名とログアウトボタン
+          <>
+            <div
+              style={{
+                background: "rgba(255, 255, 255, 0.9)",
+                padding: "10px 15px",
+                borderRadius: "25px",
+                fontSize: "14px",
+                color: "#1e3c72",
+                fontWeight: "bold",
+                backdropFilter: "blur(10px)",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+              }}
+            >
+              👤 {user.username}
+            </div>
+            <a
+              href="/~s23238268/auth.php?action=logout"
+              style={{
+                display: "inline-block",
+                background: "rgba(220, 53, 69, 0.9)",
+                color: "white",
+                padding: "10px 15px",
+                textDecoration: "none",
+                borderRadius: "25px",
+                fontWeight: "bold",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                transition: "all 0.3s ease",
+                backdropFilter: "blur(10px)",
+                fontSize: "14px",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "rgba(220, 53, 69, 1)";
+                e.currentTarget.style.transform = "translateY(-2px)";
+                e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.2)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "rgba(220, 53, 69, 0.9)";
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.15)";
+              }}
+            >
+              🚪 ログアウト
+            </a>
+          </>
+        ) : (
+          // 未ログインの場合：ログインボタン
+          <a
+            href="https://stuext.ai.is.saga-u.ac.jp/~s23238268/auth.php?action=login&redirect=/~s23238268/"
+            style={{
+              display: "inline-block",
+              background: "rgba(30, 60, 114, 0.9)",
+              color: "white",
+              padding: "10px 15px",
+              textDecoration: "none",
+              borderRadius: "25px",
+              fontWeight: "bold",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+              transition: "all 0.3s ease",
+              backdropFilter: "blur(10px)",
+              fontSize: "14px",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "rgba(30, 60, 114, 1)";
+              e.currentTarget.style.transform = "translateY(-2px)";
+              e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.2)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "rgba(30, 60, 114, 0.9)";
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.15)";
+            }}
+          >
+            🔐 ログイン
+          </a>
+        )}
+      </div>
+
+      {/* 右上のツールボタン */}
       <div
         style={{
           position: "fixed",
@@ -336,6 +457,7 @@ export default function Home() {
           zIndex: 1000,
           display: "flex",
           gap: "10px",
+          alignItems: "center",
         }}
       >
         <a
@@ -365,33 +487,66 @@ export default function Home() {
         >
           ✏️ ページ修正
         </a>
-        <a
-          href="https://stuext.ai.is.saga-u.ac.jp/~s23238268/search-syllabus"
-          style={{
-            display: "inline-block",
-            background: "rgba(255, 255, 255, 0.9)",
-            color: "#1e3c72",
-            padding: "12px 20px",
-            textDecoration: "none",
-            borderRadius: "25px",
-            fontWeight: "bold",
-            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-            transition: "all 0.3s ease",
-            backdropFilter: "blur(10px)",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = "rgba(255, 255, 255, 1)";
-            e.currentTarget.style.transform = "translateY(-2px)";
-            e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.2)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = "rgba(255, 255, 255, 0.9)";
-            e.currentTarget.style.transform = "translateY(0)";
-            e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.15)";
-          }}
-        >
-          🔍 シラバス検索
-        </a>
+
+        {!authLoading && user ? (
+          // ログイン済みの場合：シラバス検索ボタン
+          <a
+            href="/~s23238268/search-syllabus"
+            style={{
+              display: "inline-block",
+              background: "rgba(255, 255, 255, 0.9)",
+              color: "#1e3c72",
+              padding: "12px 20px",
+              textDecoration: "none",
+              borderRadius: "25px",
+              fontWeight: "bold",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+              transition: "all 0.3s ease",
+              backdropFilter: "blur(10px)",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "rgba(255, 255, 255, 1)";
+              e.currentTarget.style.transform = "translateY(-2px)";
+              e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.2)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "rgba(255, 255, 255, 0.9)";
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.15)";
+            }}
+          >
+            🔍 シラバス検索
+          </a>
+        ) : (
+          // 未ログインの場合：認証付きシラバス検索ボタン
+          <a
+            href="https://stuext.ai.is.saga-u.ac.jp/~s23238268/auth.php?action=login&redirect=/~s23238268/search-syllabus"
+            style={{
+              display: "inline-block",
+              background: "rgba(255, 255, 255, 0.9)",
+              color: "#1e3c72",
+              padding: "12px 20px",
+              textDecoration: "none",
+              borderRadius: "25px",
+              fontWeight: "bold",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+              transition: "all 0.3s ease",
+              backdropFilter: "blur(10px)",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "rgba(255, 255, 255, 1)";
+              e.currentTarget.style.transform = "translateY(-2px)";
+              e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.2)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "rgba(255, 255, 255, 0.9)";
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.15)";
+            }}
+          >
+            🔍 シラバス検索
+          </a>
+        )}
       </div>
 
       {/* AIが生成したHTMLコンテンツを動的にレンダリング */}

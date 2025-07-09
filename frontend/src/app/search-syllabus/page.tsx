@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface Lecture {
   id: number;
@@ -15,11 +15,55 @@ interface Lecture {
   time?: string;
 }
 
+interface User {
+  id: string;
+  username: string;
+  email: string;
+  login_time: number;
+}
+
 export default function SearchSyllabus() {
   const [lectures, setLectures] = useState<Lecture[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+
+  // 認証状態をチェック
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const response = await fetch("/~s23238268/auth.php?action=check");
+        if (response.ok) {
+          const authData = await response.json();
+          if (authData.authenticated) {
+            setUser(authData.user);
+          } else {
+            // 未認証の場合はログインページにリダイレクト
+            window.location.href =
+              "/~s23238268/auth.php?action=login&redirect=/~s23238268/search-syllabus";
+            return;
+          }
+        } else {
+          // 認証エラーの場合もログインページにリダイレクト
+          window.location.href =
+            "/~s23238268/auth.php?action=login&redirect=/~s23238268/search-syllabus";
+          return;
+        }
+      } catch (error) {
+        console.error("認証チェックエラー:", error);
+        // エラーの場合もログインページにリダイレクト
+        window.location.href =
+          "/~s23238268/auth.php?action=login&redirect=/~s23238268/search-syllabus";
+        return;
+      } finally {
+        setAuthLoading(false);
+      }
+    };
+
+    checkAuth();
+  }, []);
 
   // 検索フィルター
   const [filters, setFilters] = useState({
@@ -92,6 +136,30 @@ export default function SearchSyllabus() {
     setHasSearched(false);
   };
 
+  // 認証中はローディング表示
+  if (authLoading) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+          fontSize: "1.2rem",
+          fontFamily:
+            "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+        }}
+      >
+        認証を確認中...
+      </div>
+    );
+  }
+
+  // 未認証の場合は何も表示しない（リダイレクト中）
+  if (!user) {
+    return null;
+  }
+
   return (
     <div
       style={{
@@ -105,8 +173,88 @@ export default function SearchSyllabus() {
           color: "white",
           padding: "30px 20px",
           textAlign: "center",
+          position: "relative",
         }}
       >
+        {/* 左上のトップページボタン */}
+        <div
+          style={{
+            position: "absolute",
+            top: "20px",
+            left: "20px",
+          }}
+        >
+          <a
+            href="https://stuext.ai.is.saga-u.ac.jp/~s23238268/"
+            style={{
+              display: "inline-block",
+              background: "rgba(255, 255, 255, 0.2)",
+              color: "white",
+              padding: "8px 15px",
+              textDecoration: "none",
+              borderRadius: "20px",
+              fontWeight: "bold",
+              fontSize: "14px",
+              transition: "all 0.3s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "rgba(255, 255, 255, 0.3)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "rgba(255, 255, 255, 0.2)";
+            }}
+          >
+            トップへ戻る
+          </a>
+        </div>
+
+        {/* 右上のユーザーメニュー */}
+        <div
+          style={{
+            position: "absolute",
+            top: "20px",
+            right: "20px",
+            display: "flex",
+            gap: "10px",
+            alignItems: "center",
+          }}
+        >
+          <div
+            style={{
+              background: "rgba(255, 255, 255, 0.2)",
+              padding: "8px 15px",
+              borderRadius: "20px",
+              fontSize: "14px",
+              color: "white",
+              fontWeight: "bold",
+            }}
+          >
+            👤 {user.username}
+          </div>
+          <a
+            href="/~s23238268/auth.php?action=logout"
+            style={{
+              display: "inline-block",
+              background: "rgba(220, 53, 69, 0.8)",
+              color: "white",
+              padding: "8px 15px",
+              textDecoration: "none",
+              borderRadius: "20px",
+              fontWeight: "bold",
+              fontSize: "14px",
+              transition: "all 0.3s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "rgba(220, 53, 69, 1)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "rgba(220, 53, 69, 0.8)";
+            }}
+          >
+            🚪 ログアウト
+          </a>
+        </div>
+
         <h1 style={{ margin: 0, fontSize: "2.5rem", fontWeight: "bold" }}>
           シラバス検索
         </h1>
