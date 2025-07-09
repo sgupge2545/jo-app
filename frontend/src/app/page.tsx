@@ -249,7 +249,24 @@ export default function Home() {
       }
     };
 
+    // サーバー起動チェック
+    const checkServer = async () => {
+      try {
+        const response = await fetch("/~s23238268/start-server.php", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        const result = await response.json();
+        console.log("サーバー状態:", result.message);
+      } catch (error) {
+        console.error("サーバー起動チェックエラー:", error);
+      }
+    };
+
     checkAuth();
+    checkServer();
 
     // ページがフォーカスされた時にも認証状態を再チェック
     const handleFocus = () => {
