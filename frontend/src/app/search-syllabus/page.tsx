@@ -29,6 +29,10 @@ export default function SearchSyllabus() {
   const [hasSearched, setHasSearched] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalHtml, setModalHtml] = useState<string | null>(null);
+  const [modalLoading, setModalLoading] = useState(false);
+  const [modalError, setModalError] = useState<string | null>(null);
 
   // 認証状態をチェック
   useEffect(() => {
@@ -134,6 +138,26 @@ export default function SearchSyllabus() {
     });
     setLectures([]);
     setHasSearched(false);
+  };
+
+  // 講義カードクリック時のハンドラ
+  const handleLectureClick = async (code: string) => {
+    setModalOpen(true);
+    setModalHtml(null);
+    setModalLoading(true);
+    setModalError(null);
+    try {
+      const res = await fetch(
+        `/~s23238268/get-syllabus-detail-proxy.php?code=${code}`
+      );
+      if (!res.ok) throw new Error("シラバスの取得に失敗しました");
+      const html = await res.text();
+      setModalHtml(html);
+    } catch (e) {
+      setModalError(e instanceof Error ? e.message : "エラーが発生しました");
+    } finally {
+      setModalLoading(false);
+    }
   };
 
   // 認証中はローディング表示
@@ -575,7 +599,13 @@ export default function SearchSyllabus() {
                     borderRadius: "8px",
                     padding: "20px",
                     boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                    cursor: "pointer",
+                    transition: "box-shadow 0.2s",
                   }}
+                  onClick={() =>
+                    lecture.code && handleLectureClick(lecture.code)
+                  }
+                  title="クリックでシラバス詳細を表示"
                 >
                   <div
                     style={{
@@ -643,6 +673,78 @@ export default function SearchSyllabus() {
           )}
         </div>
       </div>
+
+      {modalOpen && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            background: "rgba(0,0,0,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+          }}
+          onClick={() => setModalOpen(false)}
+        >
+          <div
+            style={{
+              background: "white",
+              borderRadius: "8px",
+              padding: "30px",
+              maxWidth: "90vw",
+              maxHeight: "90vh",
+              overflow: "auto",
+              position: "relative",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setModalOpen(false)}
+              style={{
+                position: "absolute",
+                top: 10,
+                right: 10,
+                background: "#1e3c72",
+                color: "white",
+                border: "none",
+                borderRadius: "50%",
+                width: "32px",
+                height: "32px",
+                fontSize: "18px",
+                cursor: "pointer",
+              }}
+            >
+              ×
+            </button>
+            {modalLoading && <div>読み込み中...</div>}
+            {modalError && <div style={{ color: "red" }}>{modalError}</div>}
+            {modalHtml && (
+              <div
+                style={{
+                  minWidth: "300px",
+                  padding: "10px",
+                  background: "#f9f9f9",
+                  borderRadius: "8px",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                }}
+              >
+                {/* ここで独自のヘッダーや説明を追加 */}
+                <h2 style={{ color: "#1e3c72", marginTop: 0 }}>シラバス詳細</h2>
+                <hr style={{ margin: "10px 0 20px 0" }} />
+                {/* 取得したHTMLをラップして表示 */}
+                <div
+                  className="syllabus-html"
+                  dangerouslySetInnerHTML={{ __html: modalHtml }}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

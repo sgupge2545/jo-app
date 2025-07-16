@@ -42,6 +42,17 @@ def init_database():
             )
         """)
 
+        # syllabusesテーブルを作成
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS syllabuses (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                code TEXT,
+                html TEXT,
+                md TEXT,
+                vector BLOB
+            )
+        """)
+
         # 検索用のインデックスを作成
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_title ON lectures(title)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_category ON lectures(category)")
@@ -51,6 +62,24 @@ def init_database():
 
         conn.commit()
         print("データベースとテーブルが初期化されました")
+
+
+def migrate_syllabuses_table():
+    """syllabusesテーブルにcodeカラムを追加するマイグレーション"""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+
+        # テーブルの構造を確認
+        cursor.execute("PRAGMA table_info(syllabuses)")
+        columns = [column[1] for column in cursor.fetchall()]
+
+        # codeカラムが存在しない場合は追加
+        if "code" not in columns:
+            cursor.execute("ALTER TABLE syllabuses ADD COLUMN code TEXT")
+            conn.commit()
+            print("syllabusesテーブルにcodeカラムを追加しました")
+        else:
+            print("codeカラムは既に存在します")
 
 
 def insert_lecture(lecture_data: Dict[str, str]) -> int:
@@ -76,6 +105,39 @@ def insert_lecture(lecture_data: Dict[str, str]) -> int:
         )
         conn.commit()
         return cursor.lastrowid
+
+
+def insert_syllabus(code: str, html: str, md: str, vector: bytes) -> int:
+    """シラバスデータを挿入"""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            INSERT INTO syllabuses (code, html, md, vector)
+            VALUES (?, ?, ?, ?)
+        """,
+            (code, html, md, vector),
+        )
+        conn.commit()
+        return cursor.lastrowid
+
+
+def get_syllabus(syllabus_id: int) -> Optional[Dict]:
+    """シラバスデータを取得"""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM syllabuses WHERE id = ?", (syllabus_id,))
+        row = cursor.fetchone()
+        return dict(row) if row else None
+
+
+def get_all_syllabuses() -> List[Dict]:
+    """全てのシラバスデータを取得"""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM syllabuses")
+        rows = cursor.fetchall()
+        return [dict(row) for row in rows]
 
 
 def search_lectures(

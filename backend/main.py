@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from typing import Dict, Any, Optional, List
 import json
@@ -11,6 +12,7 @@ from dotenv import load_dotenv
 from database import (
     init_database,
     search_lectures,
+    get_db_connection,
 )
 
 # ========================
@@ -241,3 +243,17 @@ def get_lectures(
         keyword=keyword,
     )
     return lectures
+
+
+@app.get("/api/syllabuses/{code}", response_class=HTMLResponse)
+def get_syllabus_html(code: str):
+    """syllabusesテーブルからcodeが一致するレコードのHTMLを返すAPI"""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT html FROM syllabuses WHERE code = ?", (code,))
+        row = cursor.fetchone()
+        if row is None:
+            raise HTTPException(
+                status_code=404, detail="該当するシラバスが見つかりません"
+            )
+        return row["html"]
