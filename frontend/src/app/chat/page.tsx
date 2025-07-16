@@ -42,7 +42,7 @@ export default function ChatBot() {
 
     try {
       // SSE用のFormDataを作成
-      const response = await fetch("/~s23238268/chat-sse-proxy.php", {
+      const response = await fetch("/~s23238268/chat-proxy.php", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question: currentInput }),
