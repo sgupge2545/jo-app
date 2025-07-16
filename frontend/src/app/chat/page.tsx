@@ -37,75 +37,33 @@ export default function ChatBot() {
     setMessages((msgs) => [...msgs, userMsg]);
     setIsLoading(true);
     setInput("");
-    let aiContent = "";
-    let assistantMessageIndex = -1;
 
     try {
-      // SSE用のFormDataを作成
       const response = await fetch("/~s23238268/chat-proxy.php", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question: currentInput }),
       });
 
-      if (!response.body) throw new Error("No response body");
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let done = false;
-
-      while (!done) {
-        const { value, done: doneReading } = await reader.read();
-        done = doneReading;
-        if (value) {
-          const chunk = decoder.decode(value);
-          const lines = chunk.split("\n");
-
-          for (const line of lines) {
-            if (line.startsWith("data: ")) {
-              const data = line.slice(6); // "data: " を除去
-              if (data === "[DONE]") {
-                done = true;
-                break;
-              }
-              if (data.trim()) {
-                aiContent += data;
-                setMessages((msgs) => {
-                  const newMsgs = [...msgs];
-                  if (assistantMessageIndex === -1) {
-                    newMsgs.push({ role: "assistant", content: aiContent });
-                    assistantMessageIndex = newMsgs.length - 1;
-                    setIsLoading(false);
-                  } else {
-                    newMsgs[assistantMessageIndex] = {
-                      role: "assistant",
-                      content: aiContent,
-                    };
-                  }
-                  return newMsgs;
-                });
-              }
-            }
-          }
-        }
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
+
+      const aiContent = await response.text();
+
+      setMessages((msgs) => [
+        ...msgs,
+        { role: "assistant", content: aiContent },
+      ]);
     } catch (error) {
       console.error(error);
-      setMessages((msgs) => {
-        const newMsgs = [...msgs];
-        if (assistantMessageIndex === -1) {
-          newMsgs.push({
-            role: "assistant",
-            content: "[エラーが発生しました]",
-          });
-        } else {
-          newMsgs[assistantMessageIndex] = {
-            role: "assistant",
-            content: "[エラーが発生しました]",
-          };
-        }
-        return newMsgs;
-      });
+      setMessages((msgs) => [
+        ...msgs,
+        {
+          role: "assistant",
+          content: "[エラーが発生しました]",
+        },
+      ]);
     } finally {
       setIsLoading(false);
       setTimeout(() => {
@@ -140,7 +98,7 @@ export default function ChatBot() {
             <span className="text-sm font-medium">トップページに戻る</span>
           </Button>
           <Image
-            src="/katti.png"
+            src="/~s23238268/katti.png"
             alt="カッチーくん"
             width={120}
             height={120}
@@ -220,9 +178,9 @@ export default function ChatBot() {
               </div>
 
               {msg.role === "user" && (
-                <Avatar className="w-8 h-8 bg-blue-600 flex-shrink-0 border-2 border-blue-700 shadow-lg">
+                <Avatar className="w-8 h-8 flex-shrink-0">
                   <AvatarFallback>
-                    <User className="w-4 h-4 text-white" />
+                    <User className="w-4 h-4" />
                   </AvatarFallback>
                 </Avatar>
               )}

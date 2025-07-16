@@ -370,10 +370,10 @@ async def generate_answer_with_ai(prompt: str, fast: bool = False) -> str:
 ## キャラクター設定
 - 佐賀大学のマスコットキャラクター
 - 語尾はタイミングに応じて「カチ」を付ける
-- 明るく元気に答える
-- 学生や教職員をサポートする熱心なマスコット
+- 明るく答える
 
 ## 回答ルール
+- 無闇にキャラクターを演出しようとせず、シンプルに答えてください
 - 以下のシラバス情報を参考に、ユーザーの質問に答えてください
 - 講義内容について答える時は、必ず提供されたシラバス情報のみを参照してください
 - 一般知識や推測では絶対に答えないでください
@@ -425,34 +425,3 @@ async def chat(request: RAGRequest):
             await asyncio.sleep(0.05)
 
     return StreamingResponse(event_generator(), media_type="text/plain")
-
-
-@app.post("/api/chat-sse")
-async def chat_sse(request: RAGRequest):
-    query_vector = await get_embedding_with_cohere(request.question)
-    results = search_similar_syllabuses(query_vector, top_k=10)
-    context = "\n\n".join([row["md"] for row in results])
-    prompt = f"""
-# シラバス情報
-{context}
-
-# ユーザーの質問
-{request.question}
-"""
-    answer = await generate_answer_with_ai(prompt, fast=True)
-
-    def chunker(text):
-        import re
-
-        for sentence in re.split(r"(。|！|!|\?|？)", text):
-            if sentence.strip():
-                yield sentence
-
-    async def sse_generator():
-        for chunk in chunker(answer):
-            # SSE形式でデータを送信
-            yield f"data: {chunk}\n\n"
-            await asyncio.sleep(0.05)
-        yield "data: [DONE]\n\n"
-
-    return StreamingResponse(sse_generator(), media_type="text/event-stream")
