@@ -1,16 +1,23 @@
 <?php
 // クライアントからのリクエストボディを取得
 $input = file_get_contents('php://input');
+$data = json_decode($input, true);
 
 // FastAPIのエンドポイント
 $backend_url = 'http://localhost:8080/api/chat';
+
+// リクエストデータを準備（questionとmessagesの両方を送信）
+$request_data = [
+    'question' => $data['question'] ?? '',
+    'messages' => $data['messages'] ?? []
+];
 
 // HTTPコンテキストを作成
 $context = stream_context_create([
     'http' => [
         'method' => 'POST',
         'header' => "Content-Type: application/json\r\n",
-        'content' => $input,
+        'content' => json_encode($request_data),
         'timeout' => 60
     ]
 ]);

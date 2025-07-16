@@ -368,6 +368,7 @@ def search_similar_syllabuses(query_vector: List[float], top_k: int = 10):
 # ========================
 class RAGRequest(BaseModel):
     question: str
+    messages: Optional[List[Dict[str, str]]] = []
 
 
 class RAGResponse(BaseModel):
@@ -378,7 +379,21 @@ class RAGResponse(BaseModel):
 # ========================
 #  Gemini QA用（文章のみ返す）
 # ========================
-async def generate_answer_with_ai(prompt: str, fast: bool = False) -> str:
+async def generate_answer_with_ai(
+    prompt: str, messages: List[Dict[str, str]] = None, fast: bool = False
+) -> str:
+    # 会話履歴をGemini APIの形式に変換
+    contents = []
+
+    # 会話履歴がある場合は追加
+    if messages:
+        for msg in messages:
+            if msg["role"] == "user":
+                contents.append({"role": "user", "parts": [{"text": msg["content"]}]})
+            elif msg["role"] == "assistant":
+                contents.append({"role": "model", "parts": [{"text": msg["content"]}]})
+
+    # システムプロンプトを最後に追加
     system_prompt = f"""
 あなたは佐賀大学のマスコット「カッチーくん」です。以下の設定で回答してください：
 
@@ -396,12 +411,15 @@ async def generate_answer_with_ai(prompt: str, fast: bool = False) -> str:
 - 情報が不足している場合は、検索結果について言及せず、より具体的な情報を求めてください
 - 例：「どんな内容の講義について聞いているカチ？」「どんな分野の講義を探しているカチ？」
 
-
 # シラバス情報
 {prompt}
 """
+
+    # 最後のユーザーメッセージとして追加
+    contents.append({"role": "user", "parts": [{"text": system_prompt}]})
+
     payload = {
-        "contents": [{"parts": [{"text": system_prompt}]}],
+        "contents": contents,
         "generationConfig": {
             "response_mime_type": "text/plain",
         },
@@ -434,7 +452,6 @@ async def chat(request: RAGRequest):
 講義名: {lecture_info["name"] or "情報なし"}
 講師: {lecture_info["lecturer"] or "情報なし"}
 学年: {lecture_info["grade"] or "情報なし"}
-クラス: {lecture_info["class_name"] or "情報なし"}
 曜日・校時: {lecture_info["time"] or "情報なし"}
 """
         else:
@@ -451,7 +468,7 @@ async def chat(request: RAGRequest):
 # ユーザーの質問
 {request.question}
 """
-    answer = await generate_answer_with_ai(prompt, fast=True)
+    answer = await generate_answer_with_ai(prompt, request.messages, fast=True)
 
     def chunker(text):
         import re

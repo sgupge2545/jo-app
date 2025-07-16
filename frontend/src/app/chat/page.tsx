@@ -34,7 +34,8 @@ export default function ChatBot() {
     if (!input.trim() || isLoading) return;
     const userMsg = { role: "user" as const, content: input };
     const currentInput = input;
-    setMessages((msgs) => [...msgs, userMsg]);
+    const currentMessages = [...messages, userMsg];
+    setMessages(currentMessages);
     setIsLoading(true);
     setInput("");
 
@@ -42,7 +43,10 @@ export default function ChatBot() {
       const response = await fetch("/~s23238268/chat-proxy.php", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: currentInput }),
+        body: JSON.stringify({
+          question: currentInput,
+          messages: currentMessages,
+        }),
       });
 
       if (!response.ok) {
