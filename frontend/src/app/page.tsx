@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 
 // データの型定義
 interface PageData {
@@ -97,9 +98,9 @@ const DEFAULT_PAGE_DATA: PageData = {
         <h2 style="color: #1e3c72; border-bottom: 3px solid #1e3c72; padding-bottom: 15px;">お問い合わせ</h2>
         <p style="font-size: 1.1rem; margin-bottom: 30px;">入学に関するお問い合わせや、詳細な情報については以下までご連絡ください。</p>
         <div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
-          <a href="/chat" style="display: inline-block; background: #1e3c72; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; transition: background-color 0.3s;">入学案内</a>
-          <a href="/chat" style="display: inline-block; background: #2a5298; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; transition: background-color 0.3s;">研究情報</a>
-          <a href="/chat" style="display: inline-block; background: #4a90e2; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; transition: background-color 0.3s;">国際交流</a>
+          <a href="/~s23238268/fix-page" style="display: inline-block; background: #1e3c72; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; transition: background-color 0.3s;">入学案内</a>
+          <a href="/~s23238268/fix-page" style="display: inline-block; background: #2a5298; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; transition: background-color 0.3s;">研究情報</a>
+          <a href="/~s23238268/fix-page" style="display: inline-block; background: #4a90e2; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; transition: background-color 0.3s;">国際交流</a>
         </div>
       </section>
     </main>
@@ -476,7 +477,7 @@ export default function Home() {
         }}
       >
         <a
-          href="https://stuext.ai.is.saga-u.ac.jp/~s23238268/chat"
+          href="https://stuext.ai.is.saga-u.ac.jp/~s23238268/fix-page"
           style={{
             display: "inline-block",
             background: "rgba(255, 255, 255, 0.9)",
@@ -562,6 +563,44 @@ export default function Home() {
             🔍 シラバス検索
           </a>
         )}
+
+        {/* カッチーくんに聞くボタン */}
+        <a
+          href="/~s23238268/chat"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "8px",
+            background: "rgba(255, 255, 255, 0.9)",
+            color: "#1e3c72",
+            padding: "10px 18px",
+            textDecoration: "none",
+            borderRadius: "25px",
+            fontWeight: "bold",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+            transition: "all 0.3s ease",
+            backdropFilter: "blur(10px)",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "rgba(255, 255, 255, 1)";
+            e.currentTarget.style.transform = "translateY(-2px)";
+            e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.2)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "rgba(255, 255, 255, 0.9)";
+            e.currentTarget.style.transform = "translateY(0)";
+            e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.15)";
+          }}
+        >
+          <Image
+            src="/~s23238268/katti.png"
+            alt="カッチー"
+            width={50}
+            height={50}
+            className="rounded-full object-cover"
+          />
+          カッチーに聞く
+        </a>
       </div>
 
       {/* AIが生成したHTMLコンテンツを動的にレンダリング */}

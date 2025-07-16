@@ -1,7 +1,7 @@
 import requests
 import numpy as np
 from typing import List, Dict, Optional
-from database import get_db_connection
+from ..backend.database import get_db_connection
 import os
 
 # Cohere API設定

@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, StreamingResponse
 from pydantic import BaseModel
 from typing import Dict, Any, Optional, List
 import json
@@ -14,6 +14,9 @@ from database import (
     search_lectures,
     get_db_connection,
 )
+import struct
+import math
+import time
 
 # ========================
 #  環境変数のロード
@@ -21,8 +24,11 @@ from database import (
 load_dotenv()
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-# Gemini Flash 2.5 エンドポイント
 GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1alpha/models/gemini-2.5-flash:generateContent"
+GEMINI_API_URL_FAST = "https://generativelanguage.googleapis.com/v1alpha/models/gemini-2.5-flash:generateContent"
+
+COHERE_API_KEY = os.getenv("COHERE_API_KEY")
+COHERE_API_URL = "https://api.cohere.com/v2/embed"
 
 app = FastAPI()
 
@@ -65,14 +71,14 @@ class LectureResponse(BaseModel):
 #  Gemini API 共通ユーティリティ
 # ========================
 async def _post_to_gemini(
-    payload: Dict[str, Any], max_retries: int = 3
+    payload: Dict[str, Any], max_retries: int = 3, fast: bool = False
 ) -> Dict[str, Any]:
     if not GEMINI_API_KEY:
         raise HTTPException(
             status_code=500, detail="GEMINI_API_KEY が設定されていません"
         )
 
-    url = f"{GEMINI_API_URL}?key={GEMINI_API_KEY}"
+    url = f"{GEMINI_API_URL_FAST if fast else GEMINI_API_URL}?key={GEMINI_API_KEY}"
 
     for attempt in range(max_retries):
         try:
@@ -257,3 +263,214 @@ def get_syllabus_html(code: str):
                 status_code=404, detail="該当するシラバスが見つかりません"
             )
         return row["html"]
+
+
+# ========================
+#  bytes を float のリストに変換する関数
+# ========================
+def bytes_to_float_list(byte_data: bytes) -> List[float]:
+    count = len(byte_data) // 4  # float32 = 4バイト
+    return list(struct.unpack(f"{count}f", byte_data))
+
+
+# ========================
+#  Cohere で埋め込み生成（List[float]で返す）
+# ========================
+async def get_embedding_with_cohere(text: str) -> List[float]:
+    if not COHERE_API_KEY:
+        raise HTTPException(
+            status_code=500, detail="COHERE_API_KEY が設定されていません"
+        )
+
+    async def _embed():
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(
+                COHERE_API_URL,
+                headers={
+                    "Authorization": f"Bearer {COHERE_API_KEY}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": "embed-multilingual-v3.0",
+                    "input_type": "search_query",
+                    "texts": [text],
+                    "truncate": "END",
+                },
+                timeout=30,
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                if "embeddings" in data:
+                    embeddings = data["embeddings"]
+                    if "float" in embeddings:
+                        return [float(x) for x in embeddings["float"][0]]
+                    else:
+                        return [float(x) for x in embeddings[0]]
+                elif "embeddings_by_type" in data:
+                    embeddings_by_type = data["embeddings_by_type"]
+                    first_key = list(embeddings_by_type.keys())[0]
+                    return [float(x) for x in embeddings_by_type[first_key][0]]
+                else:
+                    raise Exception(f"予期しないレスポンス構造: {data}")
+            else:
+                raise Exception(f"Cohere APIエラー: {resp.status_code} - {resp.text}")
+
+    try:
+        return await _embed()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Cohere埋め込み生成失敗: {str(e)}")
+
+
+# ========================
+#  コサイン類似度計算（NumPyなし版）
+# ========================
+def cosine_similarity(a: List[float], b: List[float]) -> float:
+    dot = sum(x * y for x, y in zip(a, b))
+    norm_a = math.sqrt(sum(x * x for x in a))
+    norm_b = math.sqrt(sum(y * y for y in b))
+    return dot / (norm_a * norm_b) if norm_a > 0 and norm_b > 0 else 0.0
+
+
+# ========================
+#  ベクトル検索 (BLOB型vectorカラム)
+# ========================
+def search_similar_syllabuses(query_vector: List[float], top_k: int = 10):
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT code, md, vector FROM syllabuses")
+        rows = cursor.fetchall()
+    results = []
+    for row in rows:
+        code, md, vector_bytes = row
+        syllabus_vector = bytes_to_float_list(vector_bytes)
+        similarity = cosine_similarity(query_vector, syllabus_vector)
+        results.append({"code": code, "md": md, "similarity": similarity})
+    # 類似度降順でTOP K
+    results.sort(key=lambda x: x["similarity"], reverse=True)
+    return results[:top_k]
+
+
+# ========================
+#  RAGエンドポイント
+# ========================
+class RAGRequest(BaseModel):
+    question: str
+
+
+class RAGResponse(BaseModel):
+    answer: str
+    references: list
+
+
+# ========================
+#  Gemini QA用（文章のみ返す）
+# ========================
+async def generate_answer_with_ai(prompt: str, fast: bool = False) -> str:
+    system_prompt = f"""
+あなたは佐賀大学のマスコット「カッチーくん」です。以下の設定で回答してください：
+
+## キャラクター設定
+- 佐賀大学のマスコットキャラクター
+- 語尾はタイミングに応じて「カチ」を付ける
+- 明るく元気に答える
+- 学生や教職員をサポートする熱心なマスコット
+
+## 回答ルール
+- 以下のシラバス情報を参考に、ユーザーの質問に答えてください
+- 講義内容について答える時は、必ず提供されたシラバス情報のみを参照してください
+- 一般知識や推測では絶対に答えないでください
+- 情報が不足している場合は、検索結果について言及せず、より具体的な情報を求めてください
+- 例：「どんな内容の講義について聞いているカチ？」「どんな分野の講義を探しているカチ？」
+
+# シラバス情報
+{prompt}
+"""
+    payload = {
+        "contents": [{"parts": [{"text": system_prompt}]}],
+        "generationConfig": {
+            "response_mime_type": "text/plain",
+        },
+    }
+    result = await _post_to_gemini(payload, fast=fast)
+    try:
+        return result["candidates"][0]["content"]["parts"][0]["text"]
+    except (KeyError, IndexError) as e:
+        raise HTTPException(
+            status_code=500, detail="Gemini応答のパースに失敗しました"
+        ) from e
+
+
+@app.post("/api/chat")
+async def chat(request: RAGRequest):
+    t0 = time.time()
+    query_vector = await get_embedding_with_cohere(request.question)
+    t1 = time.time()
+    print(f"[TIMER] embedding: {t1 - t0:.2f}s")
+    results = search_similar_syllabuses(query_vector, top_k=10)
+    t2 = time.time()
+    print(f"[TIMER] vector search: {t2 - t1:.2f}s")
+    context = "\n\n".join([row["md"] for row in results])
+    prompt = f"""
+# シラバス情報
+{context}
+
+# ユーザーの質問
+{request.question}
+"""
+    answer = await generate_answer_with_ai(prompt, fast=True)
+    t3 = time.time()
+    print(f"[TIMER] gemini: {t3 - t2:.2f}s")
+
+    def chunker(text):
+        import re
+
+        for sentence in re.split(r"(。|！|!|\?|？)", text):
+            if sentence.strip():
+                yield sentence
+
+    async def event_generator():
+        for chunk in chunker(answer):
+            yield chunk
+            await asyncio.sleep(0.05)
+
+    print(f"[TIMER] total: {time.time() - t0:.2f}s")
+    return StreamingResponse(event_generator(), media_type="text/plain")
+
+
+@app.post("/api/chat-sse")
+async def chat_sse(request: RAGRequest):
+    t0 = time.time()
+    query_vector = await get_embedding_with_cohere(request.question)
+    t1 = time.time()
+    print(f"[TIMER] embedding: {t1 - t0:.2f}s")
+    results = search_similar_syllabuses(query_vector, top_k=10)
+    t2 = time.time()
+    print(f"[TIMER] vector search: {t2 - t1:.2f}s")
+    context = "\n\n".join([row["md"] for row in results])
+    prompt = f"""
+# シラバス情報
+{context}
+
+# ユーザーの質問
+{request.question}
+"""
+    answer = await generate_answer_with_ai(prompt, fast=True)
+    t3 = time.time()
+    print(f"[TIMER] gemini: {t3 - t2:.2f}s")
+
+    def chunker(text):
+        import re
+
+        for sentence in re.split(r"(。|！|!|\?|？)", text):
+            if sentence.strip():
+                yield sentence
+
+    async def sse_generator():
+        for chunk in chunker(answer):
+            # SSE形式でデータを送信
+            yield f"data: {chunk}\n\n"
+            await asyncio.sleep(0.05)
+        yield "data: [DONE]\n\n"
+
+    print(f"[TIMER] total: {time.time() - t0:.2f}s")
+    return StreamingResponse(sse_generator(), media_type="text/event-stream")

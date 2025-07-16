@@ -43,8 +43,8 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
 サーバー起動後、以下の URL で API ドキュメントにアクセスできます：
 
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
+- Swagger UI: http://localhost:8080/docs
+- ReDoc: http://localhost:8080/redoc
 
 ## 開発
 
