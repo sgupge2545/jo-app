@@ -36,7 +36,7 @@ def init_database():
                 name TEXT,
                 lecturer TEXT,
                 grade TEXT,
-                class TEXT,
+                class_name TEXT,
                 season TEXT,
                 time TEXT
             )
@@ -88,7 +88,7 @@ def insert_lecture(lecture_data: Dict[str, str]) -> int:
         cursor = conn.cursor()
         cursor.execute(
             """
-            INSERT INTO lectures (title, category, code, name, lecturer, grade, class, season, time)
+            INSERT INTO lectures (title, category, code, name, lecturer, grade, class_name, season, time)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
             (
@@ -98,7 +98,7 @@ def insert_lecture(lecture_data: Dict[str, str]) -> int:
                 lecture_data.get("name"),
                 lecture_data.get("lecturer"),
                 lecture_data.get("grade"),
-                lecture_data.get("class"),
+                lecture_data.get("class_name"),
                 lecture_data.get("season"),
                 lecture_data.get("time"),
             ),
@@ -186,7 +186,7 @@ def search_lectures(
             params.append(f"%{grade}%")
 
         if class_name:
-            query += " AND class LIKE ?"
+            query += " AND class_name LIKE ?"
             params.append(f"%{class_name}%")
 
         if season:
@@ -206,7 +206,7 @@ def search_lectures(
                 name LIKE ? OR 
                 lecturer LIKE ? OR 
                 grade LIKE ? OR 
-                class LIKE ? OR 
+                class_name LIKE ? OR 
                 season LIKE ? OR 
                 time LIKE ?
             )"""

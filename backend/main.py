@@ -330,6 +330,21 @@ def cosine_similarity(a: List[float], b: List[float]) -> float:
 
 
 # ========================
+#  講義情報取得関数（code指定）
+# ========================
+def get_lecture_by_code(code: str):
+    """codeに基づいて講義情報を取得（複数の場合は最初の一件）"""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT name, lecturer, grade, class_name, time FROM lectures WHERE code = ? LIMIT 1",
+            (code,),
+        )
+        row = cursor.fetchone()
+        return row
+
+
+# ========================
 #  ベクトル検索 (BLOB型vectorカラム)
 # ========================
 def search_similar_syllabuses(query_vector: List[float], top_k: int = 10):
@@ -377,8 +392,10 @@ async def generate_answer_with_ai(prompt: str, fast: bool = False) -> str:
 - 以下のシラバス情報を参考に、ユーザーの質問に答えてください
 - 講義内容について答える時は、必ず提供されたシラバス情報のみを参照してください
 - 一般知識や推測では絶対に答えないでください
+- 回答は冗長にならないようにし、ユーザーの質問に的確に答えつつ、簡潔に回答してください
 - 情報が不足している場合は、検索結果について言及せず、より具体的な情報を求めてください
 - 例：「どんな内容の講義について聞いているカチ？」「どんな分野の講義を探しているカチ？」
+
 
 # シラバス情報
 {prompt}
@@ -402,7 +419,31 @@ async def generate_answer_with_ai(prompt: str, fast: bool = False) -> str:
 async def chat(request: RAGRequest):
     query_vector = await get_embedding_with_cohere(request.question)
     results = search_similar_syllabuses(query_vector, top_k=10)
-    context = "\n\n".join([row["md"] for row in results])
+
+    # シラバス内容とそれに対応する講義情報を組み合わせる
+    context_parts = []
+    for row in results:
+        code = row["code"]
+        md = row["md"]
+
+        # 講義情報を取得
+        lecture_info = get_lecture_by_code(code)
+
+        if lecture_info:
+            lecture_details = f"""
+講義名: {lecture_info["name"] or "情報なし"}
+講師: {lecture_info["lecturer"] or "情報なし"}
+学年: {lecture_info["grade"] or "情報なし"}
+クラス: {lecture_info["class_name"] or "情報なし"}
+曜日・校時: {lecture_info["time"] or "情報なし"}
+"""
+        else:
+            lecture_details = "講義情報: 該当なし"
+
+        context_parts.append(f"{lecture_details}\n\nシラバス内容:\n{md}")
+
+    context = "\n\n---\n\n".join(context_parts)
+
     prompt = f"""
 # シラバス情報
 {context}

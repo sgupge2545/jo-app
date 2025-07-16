@@ -24,7 +24,7 @@ def import_from_csv(csv_file_path: str):
                 "name": row.get("name", ""),
                 "lecturer": row.get("lecturer", ""),
                 "grade": row.get("grade", ""),
-                "class": row.get("class", ""),
+                "class_name": row.get("class_name", ""),
                 "season": row.get("season", ""),
                 "time": row.get("time", ""),
             }
