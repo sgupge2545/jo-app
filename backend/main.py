@@ -16,7 +16,6 @@ from database import (
 )
 import struct
 import math
-import time
 
 # ========================
 #  環境変数のロード
@@ -96,7 +95,6 @@ async def _post_to_gemini(
                 try:
                     error_data = resp.json()
                     detail = error_data.get("error", {}).get("message", "")
-                    error_code = error_data.get("error", {}).get("code", "")
 
                     # 使用量制限エラーの場合
                     if (
@@ -402,13 +400,8 @@ async def generate_answer_with_ai(prompt: str, fast: bool = False) -> str:
 
 @app.post("/api/chat")
 async def chat(request: RAGRequest):
-    t0 = time.time()
     query_vector = await get_embedding_with_cohere(request.question)
-    t1 = time.time()
-    print(f"[TIMER] embedding: {t1 - t0:.2f}s")
     results = search_similar_syllabuses(query_vector, top_k=10)
-    t2 = time.time()
-    print(f"[TIMER] vector search: {t2 - t1:.2f}s")
     context = "\n\n".join([row["md"] for row in results])
     prompt = f"""
 # シラバス情報
@@ -418,8 +411,6 @@ async def chat(request: RAGRequest):
 {request.question}
 """
     answer = await generate_answer_with_ai(prompt, fast=True)
-    t3 = time.time()
-    print(f"[TIMER] gemini: {t3 - t2:.2f}s")
 
     def chunker(text):
         import re
@@ -433,19 +424,13 @@ async def chat(request: RAGRequest):
             yield chunk
             await asyncio.sleep(0.05)
 
-    print(f"[TIMER] total: {time.time() - t0:.2f}s")
     return StreamingResponse(event_generator(), media_type="text/plain")
 
 
 @app.post("/api/chat-sse")
 async def chat_sse(request: RAGRequest):
-    t0 = time.time()
     query_vector = await get_embedding_with_cohere(request.question)
-    t1 = time.time()
-    print(f"[TIMER] embedding: {t1 - t0:.2f}s")
     results = search_similar_syllabuses(query_vector, top_k=10)
-    t2 = time.time()
-    print(f"[TIMER] vector search: {t2 - t1:.2f}s")
     context = "\n\n".join([row["md"] for row in results])
     prompt = f"""
 # シラバス情報
@@ -455,8 +440,6 @@ async def chat_sse(request: RAGRequest):
 {request.question}
 """
     answer = await generate_answer_with_ai(prompt, fast=True)
-    t3 = time.time()
-    print(f"[TIMER] gemini: {t3 - t2:.2f}s")
 
     def chunker(text):
         import re
@@ -472,5 +455,4 @@ async def chat_sse(request: RAGRequest):
             await asyncio.sleep(0.05)
         yield "data: [DONE]\n\n"
 
-    print(f"[TIMER] total: {time.time() - t0:.2f}s")
     return StreamingResponse(sse_generator(), media_type="text/event-stream")
