@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Send, User } from "lucide-react";
+import { Send, User, ArrowLeft } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 
 export default function ChatBot() {
@@ -127,8 +127,20 @@ export default function ChatBot() {
       {/* Header */}
       <div className="p-4 border-b bg-white">
         <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() =>
+              (window.location.href =
+                "https://stuext.ai.is.saga-u.ac.jp/~s23238268/")
+            }
+            className="p-2 hover:bg-gray-100 mr-auto"
+          >
+            <ArrowLeft className="w-5 h-5 text-gray-600" />
+            <span className="text-sm font-medium">トップページに戻る</span>
+          </Button>
           <Image
-            src="/~s23238268/katti.png"
+            src="/katti.png"
             alt="カッチーくん"
             width={120}
             height={120}
