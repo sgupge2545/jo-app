@@ -1,11 +1,8 @@
-#!/home/s23238268/public_html/venv/bin/python
+#!/home/s23238268/public_html/api/venv/bin/python
 # -*- coding: utf-8 -*-
 import os
 import sys
 import json
-import cgi
-import cgitb
-cgitb.enable()
 import asyncio
 from service import (
     get_lectures_service,
@@ -14,37 +11,33 @@ from service import (
     chat_service,
 )
 
+
 def print_json(obj, status=200):
-    print(f"Status: {status}")
     print("Content-Type: application/json")
-    print("Access-Control-Allow-Origin: *")
-    print("Access-Control-Allow-Methods: GET, POST, OPTIONS")
-    print("Access-Control-Allow-Headers: Content-Type")
     print()
     print(json.dumps(obj, ensure_ascii=False))
 
+
 def print_text(text, status=200):
-    print(f"Status: {status}")
     print("Content-Type: text/plain; charset=utf-8")
-    print("Access-Control-Allow-Origin: *")
-    print("Access-Control-Allow-Methods: GET, POST, OPTIONS")
-    print("Access-Control-Allow-Headers: Content-Type")
     print()
     print(text)
 
+
 def print_html(html, status=200):
-    print(f"Status: {status}")
     print("Content-Type: text/html; charset=utf-8")
-    print("Access-Control-Allow-Origin: *")
-    print("Access-Control-Allow-Methods: GET, POST, OPTIONS")
-    print("Access-Control-Allow-Headers: Content-Type")
     print()
     print(html)
+
 
 def main():
     path = os.environ.get("PATH_INFO", "")
     method = os.environ.get("REQUEST_METHOD", "GET")
-    form = cgi.FieldStorage()
+    query = {}
+    if "QUERY_STRING" in os.environ:
+        from urllib.parse import parse_qs
+
+        query = {k: v[0] for k, v in parse_qs(os.environ["QUERY_STRING"]).items()}
 
     try:
         if method == "OPTIONS":
@@ -56,31 +49,35 @@ def main():
             return
 
         if path == "/lectures" and method == "GET":
-            params = {k: form.getvalue(k) for k in form.keys()}
-            result = get_lectures_service(**params)
+            result = get_lectures_service(**query)
             print_json(result)
         elif path.startswith("/syllabuses/") and method == "GET":
             code = path.split("/")[-1]
             html = get_syllabus_html_service(code)
             print_html(html)
         elif path == "/generate-page" and method == "POST":
-            data = json.load(sys.stdin)
+            content_length = int(os.environ.get("CONTENT_LENGTH", 0))
+            body = sys.stdin.read(content_length)
+            data = json.loads(body)
             result = asyncio.run(generate_page_with_ai(data["prompt"]))
             print_json(result)
         elif path == "/chat" and method == "POST":
-            data = json.load(sys.stdin)
-            # chat_serviceはStreamingResponseを返すのでtextとして出力
-            resp = asyncio.run(chat_service(data))
-            # StreamingResponseのbody_iteratorをテキストとして出力
-            if hasattr(resp, 'body_iterator'):
-                text = "".join([chunk.decode("utf-8") if isinstance(chunk, bytes) else chunk for chunk in resp.body_iterator])
-            else:
-                text = str(resp)
-            print_text(text)
+            print("Content-Type: text/plain; charset=utf-8\n")
+            content_length = int(os.environ.get("CONTENT_LENGTH", 0))
+            body = sys.stdin.read(content_length)
+            data = json.loads(body)
+            from service import chat_service_stream
+
+            async def stream():
+                async for chunk in chat_service_stream(data):
+                    print(chunk, end="", flush=True)
+
+            asyncio.run(stream())
         else:
             print_json({"error": "Not Found"}, status=404)
     except Exception as e:
         print_json({"error": str(e)}, status=500)
 
+
 if __name__ == "__main__":
-    main() 
+    main()

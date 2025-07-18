@@ -332,7 +332,9 @@ async def generate_answer_with_ai(
 #  チャットAPIサービス
 # ========================
 async def chat_service(request):
-    query_vector = await get_embedding_with_cohere(request.question)
+    question = request["question"]
+    messages = request.get("messages", [])
+    query_vector = await get_embedding_with_cohere(question)
     results = search_similar_syllabuses(query_vector, top_k=10)
     context_parts = []
     for row in results:
@@ -355,23 +357,53 @@ async def chat_service(request):
 {context}
 
 # ユーザーの質問
-{request.question}
+{question}
 """
-    answer = await generate_answer_with_ai(prompt, request.messages, fast=True)
+    answer = await generate_answer_with_ai(prompt, messages, fast=True)
 
-    def chunker(text):
-        import re
+    async def gen():
+        import re, asyncio
 
-        for sentence in re.split(r"(。|！|!|\?|？)", text):
+        for sentence in re.split(r"(。|！|!|\?|？)", answer):
             if sentence.strip():
                 yield sentence
+                await asyncio.sleep(0.05)
 
-    async def event_generator():
-        for chunk in chunker(answer):
-            yield chunk
+    return gen()
+
+
+async def chat_service_stream(data):
+    messages = data.get("messages", [])
+    # ユーザー側のメッセージをすべて連結
+    user_text = "\n".join([m["content"] for m in messages if m["role"] == "user"])
+    question = data["question"]
+    # 直近の質問がmessagesに含まれていない場合は追加
+    if not messages or messages[-1]["content"] != question:
+        user_text += ("\n" if user_text else "") + question
+    query_vector = await get_embedding_with_cohere(user_text)
+    results = search_similar_syllabuses(query_vector, top_k=10)
+    context_parts = []
+    for row in results:
+        code = row["code"]
+        md = row["md"]
+        lecture_info = get_lecture_by_code(code)
+        if lecture_info:
+            lecture_details = f"""
+講義名: {lecture_info["name"] or "情報なし"}
+講師: {lecture_info["lecturer"] or "情報なし"}
+学年: {lecture_info["grade"] or "情報なし"}
+曜日・校時: {lecture_info["time"] or "情報なし"}
+"""
+        else:
+            lecture_details = "講義情報: 該当なし"
+        context_parts.append(f"{lecture_details}\n\nシラバス内容:\n{md}")
+    context = "\n\n---\n\n".join(context_parts)
+    prompt = f"# シラバス情報\n{context}\n\n# ユーザーの質問\n{question}"
+    answer = await generate_answer_with_ai(prompt, messages, fast=True)
+    for chunk in answer.split("。"):
+        if chunk.strip():
+            yield chunk + "。"
             await asyncio.sleep(0.05)
-
-    return StreamingResponse(event_generator(), media_type="text/plain")
 
 
 def bytes_to_float_list(byte_data: bytes) -> List[float]:

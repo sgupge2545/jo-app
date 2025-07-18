@@ -95,7 +95,7 @@ export default function SearchSyllabus() {
       });
 
       const response = await fetch(
-        `/~s23238268/api.cgi/lectures?${params.toString()}`
+        `/~s23238268/api/controller.cgi/lectures?${params.toString()}`
       );
 
       if (!response.ok) {
@@ -148,7 +148,7 @@ export default function SearchSyllabus() {
     setModalError(null);
     try {
       const res = await fetch(
-        `/~s23238268/get-syllabus-detail-proxy.php?code=${code}`
+        `/~s23238268/api/controller.cgi/syllabuses/${code}`
       );
       if (!res.ok) throw new Error("シラバスの取得に失敗しました");
       const html = await res.text();
