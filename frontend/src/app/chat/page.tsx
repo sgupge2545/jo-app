@@ -111,9 +111,9 @@ export default function ChatBot() {
   };
 
   return (
-    <div className="h-screen flex flex-col max-w-4xl mx-auto">
+    <div className="h-screen flex flex-col max-w-6xl mx-auto">
       {/* Header */}
-      <div className="p-4 border-b bg-white">
+      <div className="py-2 px-4 border-b bg-white">
         <div className="flex items-center gap-3">
           <Button
             variant="ghost"
