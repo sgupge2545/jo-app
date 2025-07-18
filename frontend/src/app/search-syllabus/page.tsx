@@ -95,7 +95,7 @@ export default function SearchSyllabus() {
       });
 
       const response = await fetch(
-        `/~s23238268/search-syllabus-proxy.php?${params.toString()}`
+        `/~s23238268/api.cgi/lectures?${params.toString()}`
       );
 
       if (!response.ok) {

@@ -40,7 +40,7 @@ export default function ChatBot() {
     setInput("");
 
     try {
-      const response = await fetch("/~s23238268/chat-proxy.php", {
+      const response = await fetch("/~s23238268/api.cgi/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -49,16 +49,42 @@ export default function ChatBot() {
         }),
       });
 
-      if (!response.ok) {
+      if (!response.ok || !response.body) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const aiContent = await response.text();
-
-      setMessages((msgs) => [
-        ...msgs,
-        { role: "assistant", content: aiContent },
-      ]);
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let aiContent = "";
+      let done = false;
+      let firstChunk = true;
+      while (!done) {
+        const { value, done: doneReading } = await reader.read();
+        done = doneReading;
+        if (value) {
+          if (firstChunk) {
+            setIsLoading(false);
+            firstChunk = false;
+          }
+          const chunk = decoder.decode(value);
+          aiContent += chunk;
+          setMessages((msgs) => {
+            const newMsgs = [...msgs];
+            if (
+              newMsgs.length > 0 &&
+              newMsgs[newMsgs.length - 1].role === "assistant"
+            ) {
+              newMsgs[newMsgs.length - 1] = {
+                role: "assistant",
+                content: aiContent,
+              };
+            } else {
+              newMsgs.push({ role: "assistant", content: aiContent });
+            }
+            return newMsgs;
+          });
+        }
+      }
     } catch (error) {
       console.error(error);
       setMessages((msgs) => [
