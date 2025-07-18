@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Send, User, ArrowLeft } from "lucide-react";
-import ReactMarkdown from "react-markdown";
+import { Markdown } from "../../components/Markdown";
 
 export default function ChatBot() {
   const [messages, setMessages] = useState<
@@ -187,22 +187,7 @@ export default function ChatBot() {
               >
                 <Card className="shadow-none border-0 bg-gray-50">
                   <CardContent className="">
-                    <div className="whitespace-pre-wrap break-words text-sm">
-                      <ReactMarkdown
-                        components={{
-                          a: (props) => (
-                            <a
-                              className="text-blue-600 hover:underline"
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              {...props}
-                            />
-                          ),
-                        }}
-                      >
-                        {msg.content}
-                      </ReactMarkdown>
-                    </div>
+                    <Markdown content={msg.content} />
                   </CardContent>
                 </Card>
               </div>
