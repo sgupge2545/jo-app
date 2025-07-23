@@ -141,7 +141,7 @@ def get_session_data_from_cookie(session_data: Optional[str]) -> dict:
         return {}
 
 
-@app.get("/auth")
+@app.get("/api/auth")
 def auth_action(
     request: Request,
     response: Response,
