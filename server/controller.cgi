@@ -265,8 +265,20 @@ def handle_get_timetable(user_id):
     print_json({"user_id": user_id, "timetable": timetable})
 
 
-def handle_update_timetable(user_id):
-    """時間割を更新"""
+def handle_get_users():
+    """全ユーザーの一覧を取得"""
+    users = get_all_users()
+    print_json(users)
+
+
+def handle_get_timetable_by_id(user_id):
+    """特定ユーザーの時間割を取得"""
+    timetable = get_timetable_with_lecture_details(user_id)
+    print_json({"user_id": user_id, "timetable": timetable})
+
+
+def handle_add_lecture_to_timetable(user_id):
+    """時間割に講義を追加"""
     auth_user = verify_auth_for_api()
     if not auth_user:
         print_json({"error": "認証に失敗しました"}, 401)
@@ -281,54 +293,37 @@ def handle_update_timetable(user_id):
     data = json.loads(body)
 
     try:
-        if data.get("lecture_id") is None:
-            # 空き時間にする場合はレコードを削除
-            success = delete_timetable_entry(
-                user_id, data["day_of_week"], data["period"]
-            )
-        else:
-            # 講義を設定
-            insert_timetable_entry(
-                user_id, data["day_of_week"], data["period"], data["lecture_id"]
-            )
-            success = True
-
-        if success:
-            print_json({"message": "時間割を更新しました", "success": True})
-        else:
-            print_json({"message": "時間割の更新に失敗しました", "success": False})
+        insert_timetable_entry(
+            user_id, data["day_of_week"], data["period"], data["lecture_id"]
+        )
+        print_json({"message": "講義を追加しました", "success": True})
     except Exception as e:
         print_json({"error": f"エラーが発生しました: {str(e)}"}, 500)
 
 
-def handle_delete_timetable(user_id):
-    """ユーザーの時間割を削除"""
+def handle_remove_lecture_from_timetable(user_id):
+    """時間割から講義を削除"""
     auth_user = verify_auth_for_api()
     if not auth_user:
         print_json({"error": "認証に失敗しました"}, 401)
         return
 
     if auth_user["id"] != user_id:
-        print_json({"error": "自分の時間割のみ削除できます"}, 403)
+        print_json({"error": "自分の時間割のみ更新できます"}, 403)
         return
 
-    success = delete_user_timetable(user_id)
-    if success:
-        print_json({"message": "時間割を削除しました", "success": True})
-    else:
-        print_json({"message": "時間割の削除に失敗しました", "success": False})
+    content_length = int(os.environ.get("CONTENT_LENGTH", 0))
+    body = sys.stdin.read(content_length)
+    data = json.loads(body)
 
-
-def handle_get_users():
-    """全ユーザーの一覧を取得"""
-    users = get_all_users()
-    print_json(users)
-
-
-def handle_get_timetable_by_id(user_id):
-    """特定ユーザーの時間割を取得"""
-    timetable = get_timetable_with_lecture_details(user_id)
-    print_json({"user_id": user_id, "timetable": timetable})
+    try:
+        success = delete_timetable_entry(user_id, data["day_of_week"], data["period"])
+        if success:
+            print_json({"message": "講義を削除しました", "success": True})
+        else:
+            print_json({"message": "講義の削除に失敗しました", "success": False})
+    except Exception as e:
+        print_json({"error": f"エラーが発生しました: {str(e)}"}, 500)
 
 
 def main():
@@ -371,15 +366,25 @@ def main():
         ):
             user_id = int(path.split("/")[-2])
             handle_get_timetable(user_id)
+        elif (
+            path.startswith("/timetables/")
+            and path.endswith("/lectures")
+            and method == "POST"
+        ):
+            # 新しい講義追加エンドポイント
+            user_id = int(path.split("/")[-2])
+            handle_add_lecture_to_timetable(user_id)
+        elif (
+            path.startswith("/timetables/")
+            and path.endswith("/lectures/remove")
+            and method == "POST"
+        ):
+            # 新しい講義削除エンドポイント
+            user_id = int(path.split("/")[-3])
+            handle_remove_lecture_from_timetable(user_id)
         elif path.startswith("/timetables/") and method == "GET":
             user_id = int(path.split("/")[-1])
             handle_get_timetable_by_id(user_id)
-        elif path.startswith("/timetables/") and method == "PUT":
-            user_id = int(path.split("/")[-1])
-            handle_update_timetable(user_id)
-        elif path.startswith("/timetables/") and method == "DELETE":
-            user_id = int(path.split("/")[-1])
-            handle_delete_timetable(user_id)
         elif path == "/users" and method == "GET":
             handle_get_users()
 

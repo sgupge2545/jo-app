@@ -164,32 +164,7 @@ export default function TimetablePage() {
         );
         if (!res.ok) throw new Error("科目一覧の取得に失敗しました");
         const data = await res.json();
-        setAvailableSubjects([
-          {
-            id: 1,
-            title: "2025年度",
-            category: "理工学部",
-            code: "50311900",
-            name: "理工学サブフィールド",
-            lecturer: "木本　晃　他",
-            grade: "4年",
-            class_name: "専門科目(A5)",
-            season: "後期",
-            time: "火１",
-          },
-          {
-            id: 2,
-            title: "2025年度",
-            category: "理工学部",
-            code: "50502000",
-            name: "物理学概論Ⅰ",
-            lecturer: "河野　宏明（工）",
-            grade: "4年",
-            class_name: "専門科目(A1)",
-            season: "前期",
-            time: "火２",
-          },
-        ]);
+        setAvailableSubjects(data);
       } catch (e) {
         console.error(e);
         setAvailableSubjects([]);
@@ -221,15 +196,19 @@ export default function TimetablePage() {
   const handleAdd = async () => {
     if (!selectedUser || !selectedSubjectId) return;
     try {
-      const res = await fetch(`${BACKEND_URL}/timetables/${selectedUser}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          day_of_week: selectedDay,
-          period: selectedPeriod,
-          lecture_id: Number(selectedSubjectId),
-        }),
-      });
+      const res = await fetch(
+        `${BACKEND_URL}/timetables/${selectedUser}/lectures`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            day_of_week: selectedDay,
+            period: selectedPeriod,
+            lecture_id: Number(selectedSubjectId),
+          }),
+        }
+      );
       if (!res.ok) throw new Error("追加に失敗しました");
       // 追加後、再取得
       const timetableRes = await fetch(
@@ -263,15 +242,18 @@ export default function TimetablePage() {
   const handleConfirmDelete = async () => {
     if (!deleteTarget || !selectedUser) return;
     try {
-      const res = await fetch(`${BACKEND_URL}/timetables/${selectedUser}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          day_of_week: deleteTarget.day,
-          period: deleteTarget.period,
-          lecture_id: null,
-        }),
-      });
+      const res = await fetch(
+        `${BACKEND_URL}/timetables/${selectedUser}/lectures/remove`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            day_of_week: deleteTarget.day,
+            period: deleteTarget.period,
+          }),
+        }
+      );
       if (!res.ok) throw new Error("削除に失敗しました");
       // 削除後、再取得
       const timetableRes = await fetch(

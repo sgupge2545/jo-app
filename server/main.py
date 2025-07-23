@@ -84,10 +84,15 @@ class TimetableResponse(BaseModel):
     timetable: Dict[str, Dict[str, Optional[Dict]]]
 
 
-class TimetableUpdateRequest(BaseModel):
+class TimetableAddRequest(BaseModel):
     day_of_week: int  # 1=月, 2=火, 3=水, 4=木, 5=金
     period: int  # 1=1限, 2=2限, ..., 6=6限
-    lecture_id: Optional[int] = None  # nullの場合は空き時間
+    lecture_id: int
+
+
+class TimetableRemoveRequest(BaseModel):
+    day_of_week: int  # 1=月, 2=火, 3=水, 4=木, 5=金
+    period: int  # 1=1限, 2=2限, ..., 6=6限
 
 
 def verify_auth(cookie: str = Header(None)) -> Optional[Dict]:
@@ -317,60 +322,47 @@ def get_user_timetable_api(user_id: int):
     return TimetableResponse(user_id=user_id, timetable=timetable)
 
 
-@app.put("/api/timetables/{user_id}")
-async def update_timetable_slot_authenticated(
-    user_id: int, request: TimetableUpdateRequest, cookie: str = Header(None)
+@app.post("/api/timetables/{user_id}/lectures")
+async def add_lecture_to_timetable(
+    user_id: int, request: TimetableAddRequest, cookie: str = Header(None)
 ):
-    """特定の時間帯の講義を更新（認証付き）"""
-    # PHP認証を確認
+    """時間割に講義を追加（認証付き）"""
     auth_user = verify_auth(cookie)
     if not auth_user:
         raise HTTPException(status_code=401, detail="認証に失敗しました")
 
-    # ユーザーIDの一致チェック
     if auth_user["id"] != user_id:
         raise HTTPException(status_code=403, detail="自分の時間割のみ更新できます")
 
     try:
-        if request.lecture_id is None:
-            # 空き時間にする場合はレコードを削除
-            success = delete_timetable_entry(
-                user_id, request.day_of_week, request.period
-            )
-        else:
-            # 講義を設定
-            insert_timetable_entry(
-                user_id, request.day_of_week, request.period, request.lecture_id
-            )
-            success = True
-
-        if success:
-            return {"message": "時間割を更新しました", "success": True}
-        else:
-            return {"message": "時間割の更新に失敗しました", "success": False}
+        insert_timetable_entry(
+            user_id, request.day_of_week, request.period, request.lecture_id
+        )
+        return {"message": "講義を追加しました", "success": True}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"エラーが発生しました: {str(e)}")
 
 
-@app.delete("/api/timetables/{user_id}")
-async def delete_user_timetable_authenticated(user_id: int, cookie: str = Header(None)):
-    """ユーザーの時間割を全て削除（認証付き）"""
-    # PHP認証を確認
+@app.post("/api/timetables/{user_id}/lectures/remove")
+async def remove_lecture_from_timetable(
+    user_id: int, request: TimetableRemoveRequest, cookie: str = Header(None)
+):
+    """時間割から講義を削除（認証付き）"""
     auth_user = verify_auth(cookie)
     if not auth_user:
         raise HTTPException(status_code=401, detail="認証に失敗しました")
 
-    # ユーザーIDの一致チェック
     if auth_user["id"] != user_id:
-        raise HTTPException(status_code=403, detail="自分の時間割のみ削除できます")
+        raise HTTPException(status_code=403, detail="自分の時間割のみ更新できます")
 
-    from database import delete_user_timetable
-
-    success = delete_user_timetable(user_id)
-    if success:
-        return {"message": "時間割を削除しました", "success": True}
-    else:
-        return {"message": "時間割の削除に失敗しました", "success": False}
+    try:
+        success = delete_timetable_entry(user_id, request.day_of_week, request.period)
+        if success:
+            return {"message": "講義を削除しました", "success": True}
+        else:
+            return {"message": "講義の削除に失敗しました", "success": False}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"エラーが発生しました: {str(e)}")
 
 
 @app.get("/api/users", response_model=List[UserResponse])
