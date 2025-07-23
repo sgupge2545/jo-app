@@ -34,32 +34,31 @@ export default function SearchSyllabus() {
   const [modalLoading, setModalLoading] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
 
+  const FRONTEND_URL = process.env.NEXT_PUBLIC_FRONTEND_URL || "";
+  const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "";
+
   // 認証状態をチェック
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const response = await fetch("/~s23238268/auth.php?action=check");
+        const response = await fetch(
+          `${BACKEND_URL}/controller.cgi/auth?action=check`
+        );
         if (response.ok) {
           const authData = await response.json();
           if (authData.authenticated) {
             setUser(authData.user);
           } else {
-            // 未認証の場合はログインページにリダイレクト
-            window.location.href =
-              "/~s23238268/auth.php?action=login&redirect=/~s23238268/search-syllabus";
+            window.location.href = `${FRONTEND_URL}/controller.cgi/auth?action=login&redirect=${FRONTEND_URL}/search-syllabus`;
             return;
           }
         } else {
-          // 認証エラーの場合もログインページにリダイレクト
-          window.location.href =
-            "/~s23238268/auth.php?action=login&redirect=/~s23238268/search-syllabus";
+          window.location.href = `${FRONTEND_URL}/controller.cgi/auth?action=login&redirect=${FRONTEND_URL}/search-syllabus`;
           return;
         }
       } catch (error) {
         console.error("認証チェックエラー:", error);
-        // エラーの場合もログインページにリダイレクト
-        window.location.href =
-          "/~s23238268/auth.php?action=login&redirect=/~s23238268/search-syllabus";
+        window.location.href = `${FRONTEND_URL}/controller.cgi/auth?action=login&redirect=${FRONTEND_URL}/search-syllabus`;
         return;
       } finally {
         setAuthLoading(false);
@@ -95,7 +94,7 @@ export default function SearchSyllabus() {
       });
 
       const response = await fetch(
-        `/~s23238268/api/controller.cgi/lectures?${params.toString()}`
+        `${BACKEND_URL}/controller.cgi/lectures?${params.toString()}`
       );
 
       if (!response.ok) {
@@ -148,7 +147,7 @@ export default function SearchSyllabus() {
     setModalError(null);
     try {
       const res = await fetch(
-        `/~s23238268/api/controller.cgi/syllabuses/${code}`
+        `${BACKEND_URL}/controller.cgi/syllabuses/${code}`
       );
       if (!res.ok) throw new Error("シラバスの取得に失敗しました");
       const html = await res.text();
@@ -223,7 +222,7 @@ export default function SearchSyllabus() {
           }}
         >
           <a
-            href="https://stuext.ai.is.saga-u.ac.jp/~s23238268/"
+            href={`${FRONTEND_URL}/`}
             style={{
               display: "inline-block",
               background: "rgba(255, 255, 255, 0.2)",
@@ -270,7 +269,7 @@ export default function SearchSyllabus() {
             👤 {user.username}
           </div>
           <a
-            href="/~s23238268/auth.php?action=logout"
+            href={`${FRONTEND_URL}/controller.cgi/auth?action=logout`}
             style={{
               display: "inline-block",
               background: "rgba(220, 53, 69, 0.8)",

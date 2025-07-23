@@ -227,12 +227,15 @@ export default function Home() {
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
 
+  const FRONTEND_URL = process.env.NEXT_PUBLIC_FRONTEND_URL || "";
+  const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "";
+
   // 認証状態をチェック
   useEffect(() => {
     const checkAuth = async () => {
       try {
         const response = await fetch(
-          "/~s23238268/controller.cgi/auth?action=check"
+          `${BACKEND_URL}/controller.cgi/auth?action=check`
         );
         if (response.ok) {
           const authData = await response.json();
@@ -405,7 +408,7 @@ export default function Home() {
               👤 {user.username}
             </div>
             <a
-              href="/~s23238268/controller.cgi/auth?action=logout"
+              href={`${FRONTEND_URL}/controller.cgi/auth?action=logout`}
               style={{
                 display: "inline-block",
                 background: "rgba(220, 53, 69, 0.9)",
@@ -479,7 +482,7 @@ export default function Home() {
         }}
       >
         <a
-          href="https://stuext.ai.is.saga-u.ac.jp/~s23238268/fix-page"
+          href="/~s23238268/fix-page"
           style={{
             display: "inline-block",
             background: "rgba(255, 255, 255, 0.9)",
@@ -509,7 +512,7 @@ export default function Home() {
         {!authLoading && user ? (
           // ログイン済みの場合：シラバス検索ボタン
           <a
-            href="/~s23238268/search-syllabus"
+            href={`${FRONTEND_URL}/search-syllabus`}
             style={{
               display: "inline-block",
               background: "rgba(255, 255, 255, 0.9)",
@@ -538,7 +541,7 @@ export default function Home() {
         ) : (
           // 未ログインの場合：認証付きシラバス検索ボタン
           <a
-            href="https://stuext.ai.is.saga-u.ac.jp/~s23238268/controller.cgi/auth?action=login&redirect=/~s23238268/search-syllabus"
+            href={`${FRONTEND_URL}/controller.cgi/auth?action=login&redirect=${FRONTEND_URL}/search-syllabus`}
             style={{
               display: "inline-block",
               background: "rgba(255, 255, 255, 0.9)",
@@ -608,7 +611,7 @@ export default function Home() {
         {!authLoading && user ? (
           // ログイン済みの場合：時間割ボタン
           <a
-            href="/~s23238268/timetable"
+            href={`${FRONTEND_URL}/timetable`}
             style={{
               display: "inline-flex",
               alignItems: "center",
@@ -639,7 +642,7 @@ export default function Home() {
         ) : (
           // 未ログインの場合：認証付き時間割ボタン
           <a
-            href="https://stuext.ai.is.saga-u.ac.jp/~s23238268/controller.cgi/auth?action=login&redirect=/~s23238268/timetable"
+            href={`${FRONTEND_URL}/controller.cgi/auth?action=login&redirect=${FRONTEND_URL}/timetable`}
             style={{
               display: "inline-flex",
               alignItems: "center",

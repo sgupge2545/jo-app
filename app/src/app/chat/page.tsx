@@ -30,6 +30,9 @@ export default function ChatBot() {
     setInput(e.target.value);
   };
 
+  const FRONTEND_URL = process.env.NEXT_PUBLIC_FRONTEND_URL || "";
+  const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "";
+
   const handleSubmit = async () => {
     if (!input.trim() || isLoading) return;
     const userMsg = { role: "user" as const, content: input };
@@ -40,7 +43,7 @@ export default function ChatBot() {
     setInput("");
 
     try {
-      const response = await fetch("/~s23238268/api/controller.cgi/chat", {
+      const response = await fetch(`${BACKEND_URL}/controller.cgi/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -118,10 +121,7 @@ export default function ChatBot() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() =>
-              (window.location.href =
-                "https://stuext.ai.is.saga-u.ac.jp/~s23238268/")
-            }
+            onClick={() => (window.location.href = `${FRONTEND_URL}/`)}
             className="p-2 hover:bg-gray-100 mr-auto"
           >
             <ArrowLeft className="w-5 h-5 text-gray-600" />

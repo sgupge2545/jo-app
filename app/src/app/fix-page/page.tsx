@@ -15,6 +15,9 @@ export default function ChatPage() {
   const [currentPage, setCurrentPage] = useState<PageData | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const FRONTEND_URL = process.env.NEXT_PUBLIC_FRONTEND_URL || "";
+  const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "";
+
   // 初期化時に現在のページデータを読み込み
   useEffect(() => {
     const loadCurrentPage = () => {
@@ -83,7 +86,7 @@ ${currentCss}
 `;
 
       const response = await fetch(
-        "/~s23238268/api/controller.cgi/generate-page",
+        `${BACKEND_URL}/controller.cgi/generate-page`,
         {
           method: "POST",
           headers: {
@@ -128,7 +131,7 @@ ${currentCss}
       <div className="header">
         <h1>ページ修正</h1>
         <p>プロンプトを入力して、ページを修正してください</p>
-        <Link href="/" className="back-link">
+        <Link href={`${FRONTEND_URL}/`} className="back-link">
           ← TOPページに戻る
         </Link>
       </div>
