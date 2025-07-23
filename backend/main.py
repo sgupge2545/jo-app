@@ -1,4 +1,5 @@
-from fastapi import FastAPI, Query
+import requests
+from fastapi import FastAPI, Query, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
@@ -84,6 +85,29 @@ class TimetableUpdateRequest(BaseModel):
     lecture_id: Optional[int] = None  # nullの場合は空き時間
 
 
+def verify_php_auth(cookie: str = Header(None)) -> Optional[Dict]:
+    """PHPの認証エンドポイントで認証を確認"""
+    if not cookie:
+        return None
+
+    try:
+        # PHPの認証エンドポイントを呼び出し
+        response = requests.get(
+            "https://stuext.ai.is.saga-u.ac.jp/~s23238268/auth.php?action=check",
+            headers={"Cookie": cookie},
+            timeout=10,
+        )
+
+        if response.status_code == 200:
+            auth_data = response.json()
+            if auth_data.get("authenticated"):
+                return auth_data.get("user")
+
+        return None
+    except Exception:
+        return None
+
+
 @app.get("/")
 def root():
     return {"message": "FastAPI is running via Hypercorn!"}
@@ -152,9 +176,20 @@ def get_user_timetable_simple(user_id: int):
     return {"user_id": user_id, "timetable": timetable}
 
 
-@app.put("/api/users/{user_id}/timetable")
-def update_timetable_slot(user_id: int, request: TimetableUpdateRequest):
-    """特定の時間帯の講義を更新"""
+@app.put("/api/timetables/{user_id}")
+def update_timetable_slot_authenticated(
+    user_id: int, request: TimetableUpdateRequest, cookie: str = Header(None)
+):
+    """特定の時間帯の講義を更新（認証付き）"""
+    # PHP認証を確認
+    auth_user = verify_php_auth(cookie)
+    if not auth_user:
+        raise HTTPException(status_code=401, detail="認証に失敗しました")
+
+    # ユーザーIDの一致チェック
+    if auth_user["id"] != user_id:
+        raise HTTPException(status_code=403, detail="自分の時間割のみ更新できます")
+
     try:
         if request.lecture_id is None:
             # 空き時間にする場合はレコードを削除
@@ -173,12 +208,21 @@ def update_timetable_slot(user_id: int, request: TimetableUpdateRequest):
         else:
             return {"message": "時間割の更新に失敗しました", "success": False}
     except Exception as e:
-        return {"message": f"エラーが発生しました: {str(e)}", "success": False}
+        raise HTTPException(status_code=500, detail=f"エラーが発生しました: {str(e)}")
 
 
-@app.delete("/api/users/{user_id}/timetable")
-def delete_user_timetable_api(user_id: int):
-    """ユーザーの時間割を全て削除"""
+@app.delete("/api/timetables/{user_id}")
+def delete_user_timetable_authenticated(user_id: int, cookie: str = Header(None)):
+    """ユーザーの時間割を全て削除（認証付き）"""
+    # PHP認証を確認
+    auth_user = verify_php_auth(cookie)
+    if not auth_user:
+        raise HTTPException(status_code=401, detail="認証に失敗しました")
+
+    # ユーザーIDの一致チェック
+    if auth_user["id"] != user_id:
+        raise HTTPException(status_code=403, detail="自分の時間割のみ削除できます")
+
     from database import delete_user_timetable
 
     success = delete_user_timetable(user_id)
@@ -192,3 +236,10 @@ def delete_user_timetable_api(user_id: int):
 def get_users():
     """全ユーザーの一覧を取得"""
     return get_all_users()
+
+
+@app.get("/api/timetables/{user_id}")
+def get_user_timetable_by_id(user_id: int):
+    """特定ユーザーの時間割を取得"""
+    timetable = get_timetable_with_lecture_details(user_id)
+    return {"user_id": user_id, "timetable": timetable}
