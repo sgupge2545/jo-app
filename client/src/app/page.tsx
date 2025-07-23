@@ -539,7 +539,7 @@ export default function Home() {
         ) : (
           // 未ログインの場合：認証付きシラバス検索ボタン
           <a
-            href={`${FRONTEND_URL}/auth?action=login&redirect=${FRONTEND_URL}/search-syllabus`}
+            href={`${BACKEND_URL}/auth?action=login&redirect=${FRONTEND_URL}/search-syllabus`}
             style={{
               display: "inline-block",
               background: "rgba(255, 255, 255, 0.9)",
