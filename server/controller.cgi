@@ -12,6 +12,7 @@ from service import (
     get_lectures_service,
     get_syllabus_html_service,
     generate_page_with_ai,
+    get_available_lectures_service,
 )
 from database import (
     get_or_create_user,
@@ -19,7 +20,6 @@ from database import (
     insert_timetable_entry,
     delete_timetable_entry,
     get_all_users,
-    delete_user_timetable,
 )
 import inspect
 
@@ -396,10 +396,9 @@ def main():
             result = get_lectures_service(**filtered_query)
             print_json(result)
         elif path == "/available-lectures" and method == "GET":
-            sig = inspect.signature(get_lectures_service)
-            allowed_keys = set(sig.parameters.keys())
-            filtered_query = {k: v for k, v in query.items() if k in allowed_keys}
-            result = get_lectures_service(**filtered_query)
+            day = query.get("day")
+            period = query.get("period")
+            result = get_available_lectures_service(day, int(period))
             print_json(result)
         elif path.startswith("/syllabuses/") and method == "GET":
             code = path.split("/")[-1]
