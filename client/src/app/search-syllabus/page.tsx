@@ -41,24 +41,22 @@ export default function SearchSyllabus() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const response = await fetch(
-          `${BACKEND_URL}/controller.cgi/auth?action=check`
-        );
+        const response = await fetch(`${BACKEND_URL}/auth?action=check`);
         if (response.ok) {
           const authData = await response.json();
           if (authData.authenticated) {
             setUser(authData.user);
           } else {
-            window.location.href = `${FRONTEND_URL}/controller.cgi/auth?action=login&redirect=${FRONTEND_URL}/search-syllabus`;
+            window.location.href = `${FRONTEND_URL}/auth?action=login&redirect=${FRONTEND_URL}/search-syllabus`;
             return;
           }
         } else {
-          window.location.href = `${FRONTEND_URL}/controller.cgi/auth?action=login&redirect=${FRONTEND_URL}/search-syllabus`;
+          window.location.href = `${FRONTEND_URL}/auth?action=login&redirect=${FRONTEND_URL}/search-syllabus`;
           return;
         }
       } catch (error) {
         console.error("認証チェックエラー:", error);
-        window.location.href = `${FRONTEND_URL}/controller.cgi/auth?action=login&redirect=${FRONTEND_URL}/search-syllabus`;
+        window.location.href = `${FRONTEND_URL}/auth?action=login&redirect=${FRONTEND_URL}/search-syllabus`;
         return;
       } finally {
         setAuthLoading(false);
@@ -94,7 +92,7 @@ export default function SearchSyllabus() {
       });
 
       const response = await fetch(
-        `${BACKEND_URL}/controller.cgi/lectures?${params.toString()}`
+        `${BACKEND_URL}/lectures?${params.toString()}`
       );
 
       if (!response.ok) {
@@ -146,9 +144,7 @@ export default function SearchSyllabus() {
     setModalLoading(true);
     setModalError(null);
     try {
-      const res = await fetch(
-        `${BACKEND_URL}/controller.cgi/syllabuses/${code}`
-      );
+      const res = await fetch(`${BACKEND_URL}/syllabuses/${code}`);
       if (!res.ok) throw new Error("シラバスの取得に失敗しました");
       const html = await res.text();
       setModalHtml(html);
@@ -269,7 +265,7 @@ export default function SearchSyllabus() {
             👤 {user.username}
           </div>
           <a
-            href={`${FRONTEND_URL}/controller.cgi/auth?action=logout`}
+            href={`${FRONTEND_URL}/auth?action=logout`}
             style={{
               display: "inline-block",
               background: "rgba(220, 53, 69, 0.8)",

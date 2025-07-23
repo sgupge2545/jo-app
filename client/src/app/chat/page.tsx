@@ -43,7 +43,7 @@ export default function ChatBot() {
     setInput("");
 
     try {
-      const response = await fetch(`${BACKEND_URL}/controller.cgi/chat`, {
+      const response = await fetch(`${BACKEND_URL}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

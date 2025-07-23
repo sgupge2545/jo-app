@@ -100,7 +100,7 @@ export default function TimetablePage() {
     const fetchTimetable = async () => {
       try {
         const res = await fetch(
-          `${BACKEND_URL}/api/users/${selectedUser}/timetable`
+          `${BACKEND_URL}/users/${selectedUser}/timetable`
         );
         if (!res.ok) throw new Error("時間割の取得に失敗しました");
         const data = await res.json();
@@ -129,7 +129,7 @@ export default function TimetablePage() {
       }
     };
     const fetchUsers = async () => {
-      const res = await fetch(`${BACKEND_URL}/api/users`);
+      const res = await fetch(`${BACKEND_URL}/users`);
       const data = await res.json();
       setUsers(data);
     };
@@ -146,7 +146,7 @@ export default function TimetablePage() {
     const fetchAvailableSubjects = async () => {
       try {
         const res = await fetch(
-          `${BACKEND_URL}/api/available-lectures?day=${
+          `${BACKEND_URL}/available-lectures?day=${
             dayNames[selectedDay - 1]
           }&period=${selectedPeriod}`
         );
@@ -184,7 +184,7 @@ export default function TimetablePage() {
   const handleAdd = async () => {
     if (!selectedUser || !selectedSubjectId) return;
     try {
-      const res = await fetch(`${BACKEND_URL}/api/timetables/${selectedUser}`, {
+      const res = await fetch(`${BACKEND_URL}/timetables/${selectedUser}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -196,7 +196,7 @@ export default function TimetablePage() {
       if (!res.ok) throw new Error("追加に失敗しました");
       // 追加後、再取得
       const timetableRes = await fetch(
-        `${BACKEND_URL}/api/users/${selectedUser}/timetable`
+        `${BACKEND_URL}/users/${selectedUser}/timetable`
       );
       const data = await timetableRes.json();
       setTimetable(data.timetable);
@@ -226,7 +226,7 @@ export default function TimetablePage() {
   const handleConfirmDelete = async () => {
     if (!deleteTarget || !selectedUser) return;
     try {
-      const res = await fetch(`${BACKEND_URL}/api/timetables/${selectedUser}`, {
+      const res = await fetch(`${BACKEND_URL}/timetables/${selectedUser}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -238,7 +238,7 @@ export default function TimetablePage() {
       if (!res.ok) throw new Error("削除に失敗しました");
       // 削除後、再取得
       const timetableRes = await fetch(
-        `${BACKEND_URL}/api/users/${selectedUser}/timetable`
+        `${BACKEND_URL}/users/${selectedUser}/timetable`
       );
       const data = await timetableRes.json();
       setTimetable(data.timetable);

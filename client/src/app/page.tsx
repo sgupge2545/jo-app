@@ -234,9 +234,7 @@ export default function Home() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const response = await fetch(
-          `${BACKEND_URL}/controller.cgi/auth?action=check`
-        );
+        const response = await fetch(`${BACKEND_URL}/auth?action=check`);
         if (response.ok) {
           const authData = await response.json();
           if (authData.authenticated) {
@@ -408,7 +406,7 @@ export default function Home() {
               👤 {user.username}
             </div>
             <a
-              href={`${FRONTEND_URL}/controller.cgi/auth?action=logout`}
+              href={`${BACKEND_URL}/auth?action=logout`}
               style={{
                 display: "inline-block",
                 background: "rgba(220, 53, 69, 0.9)",
@@ -439,7 +437,7 @@ export default function Home() {
         ) : (
           // 未ログインの場合：ログインボタン
           <a
-            href="https://stuext.ai.is.saga-u.ac.jp/~s23238268/controller.cgi/auth?action=login&redirect=/~s23238268/"
+            href={`${BACKEND_URL}/auth?action=login&redirect=${FRONTEND_URL}/`}
             style={{
               display: "inline-block",
               background: "rgba(30, 60, 114, 0.9)",
@@ -541,7 +539,7 @@ export default function Home() {
         ) : (
           // 未ログインの場合：認証付きシラバス検索ボタン
           <a
-            href={`${FRONTEND_URL}/controller.cgi/auth?action=login&redirect=${FRONTEND_URL}/search-syllabus`}
+            href={`${FRONTEND_URL}/auth?action=login&redirect=${FRONTEND_URL}/search-syllabus`}
             style={{
               display: "inline-block",
               background: "rgba(255, 255, 255, 0.9)",
@@ -642,7 +640,7 @@ export default function Home() {
         ) : (
           // 未ログインの場合：認証付き時間割ボタン
           <a
-            href={`${FRONTEND_URL}/controller.cgi/auth?action=login&redirect=${FRONTEND_URL}/timetable`}
+            href={`${FRONTEND_URL}/auth?action=login&redirect=${FRONTEND_URL}/timetable`}
             style={{
               display: "inline-flex",
               alignItems: "center",
