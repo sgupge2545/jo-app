@@ -640,7 +640,7 @@ export default function Home() {
         ) : (
           // 未ログインの場合：認証付き時間割ボタン
           <a
-            href={`${FRONTEND_URL}/auth?action=login&redirect=${FRONTEND_URL}/timetable`}
+            href={`${BACKEND_URL}/auth?action=login&redirect=${FRONTEND_URL}/timetable`}
             style={{
               display: "inline-flex",
               alignItems: "center",
