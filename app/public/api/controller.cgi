@@ -58,7 +58,7 @@ def get_session_data():
             if key == "session_data":
                 try:
                     session_data = json.loads(base64.b64decode(value).decode("utf-8"))
-                except:
+                except Exception:
                     pass
     return session_data
 
