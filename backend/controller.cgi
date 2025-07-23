@@ -8,7 +8,6 @@ from service import (
     get_lectures_service,
     get_syllabus_html_service,
     generate_page_with_ai,
-    chat_service,
 )
 
 
