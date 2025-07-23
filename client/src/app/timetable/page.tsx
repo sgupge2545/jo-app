@@ -41,6 +41,9 @@ type Subject = {
   time: string;
   category: string;
   code: string;
+  grade: string;
+  class_name: string;
+  season: string;
 };
 
 type TimetableData = {
@@ -73,6 +76,15 @@ const getPeriodColor = (period: number) => {
 };
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "";
+
+// 検索条件判定用の関数
+function subjectMatchesQuery(subject: Subject, query: string): boolean {
+  const trimmedQuery = query.trim().toLowerCase();
+  const nameMatch = subject.name.toLowerCase().includes(trimmedQuery);
+  const lecturerMatch = subject.lecturer.toLowerCase().includes(trimmedQuery);
+
+  return nameMatch || lecturerMatch;
+}
 
 export default function TimetablePage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -152,7 +164,32 @@ export default function TimetablePage() {
         );
         if (!res.ok) throw new Error("科目一覧の取得に失敗しました");
         const data = await res.json();
-        setAvailableSubjects(data);
+        setAvailableSubjects([
+          {
+            id: 1,
+            title: "2025年度",
+            category: "理工学部",
+            code: "50311900",
+            name: "理工学サブフィールド",
+            lecturer: "木本　晃　他",
+            grade: "4年",
+            class_name: "専門科目(A5)",
+            season: "後期",
+            time: "火１",
+          },
+          {
+            id: 2,
+            title: "2025年度",
+            category: "理工学部",
+            code: "50502000",
+            name: "物理学概論Ⅰ",
+            lecturer: "河野　宏明（工）",
+            grade: "4年",
+            class_name: "専門科目(A1)",
+            season: "前期",
+            time: "火２",
+          },
+        ]);
       } catch (e) {
         console.error(e);
         setAvailableSubjects([]);
@@ -162,8 +199,8 @@ export default function TimetablePage() {
   }, [isDialogOpen, selectedDay, selectedPeriod]);
 
   const handleBack = () => {
-    // 戻る処理（実際のアプリでは router.back() など）
-    console.log("戻るボタンがクリックされました");
+    const FRONTEND_URL = process.env.NEXT_PUBLIC_FRONTEND_URL || "";
+    window.location.href = `${FRONTEND_URL}/`;
   };
 
   const handleAddSubject = (day: number, period: number) => {
@@ -399,7 +436,7 @@ export default function TimetablePage() {
           <div className="space-y-4">
             <div>
               <Label htmlFor="subject-search">科目を検索</Label>
-              <Command className="border rounded-md">
+              <Command className="border rounded-md" shouldFilter={false}>
                 <CommandInput
                   placeholder="科目名で検索..."
                   value={searchQuery}
@@ -409,19 +446,13 @@ export default function TimetablePage() {
                   <CommandEmpty>該当する科目が見つかりません</CommandEmpty>
                   <CommandGroup>
                     {availableSubjects
-                      .filter(
-                        (subject) =>
-                          subject.name
-                            .toLowerCase()
-                            .includes(searchQuery.toLowerCase()) ||
-                          subject.lecturer
-                            .toLowerCase()
-                            .includes(searchQuery.toLowerCase())
+                      .filter((subject) =>
+                        subjectMatchesQuery(subject, searchQuery)
                       )
                       .map((subject) => (
                         <CommandItem
                           key={subject.id}
-                          value={String(subject.id)}
+                          value={subject.name}
                           onSelect={() =>
                             setSelectedSubjectId(String(subject.id))
                           }
