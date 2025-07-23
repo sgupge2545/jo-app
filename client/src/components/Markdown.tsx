@@ -2,6 +2,7 @@ import React from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkBreaks from "remark-breaks";
+import rehypeRaw from "rehype-raw";
 
 type Props = {
   content: string;
@@ -12,6 +13,7 @@ export const Markdown = ({ content }: Props) => {
     <div className="markdown-body prose dark:prose-invert text-gray-800 dark:text-gray-100">
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkBreaks]}
+        rehypePlugins={[rehypeRaw]}
         components={{
           a: ({ ...props }) => (
             <a
