@@ -115,6 +115,7 @@ function subjectMatchesQuery(subject: Subject, query: string): boolean {
 export default function TimetablePage() {
   const [users, setUsers] = useState<User[]>([]);
   const [selectedUser, setSelectedUser] = useState<string>("");
+  const [myUserId, setMyUserId] = useState<string>("");
   const [timetable, setTimetable] = useState<TimetableData | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
@@ -176,6 +177,7 @@ export default function TimetablePage() {
         if (meRes.ok) {
           const meData = await meRes.json();
           setSelectedUser(meData.id);
+          setMyUserId(meData.id);
         }
       } catch (e) {
         console.error(e);
@@ -430,35 +432,42 @@ export default function TimetablePage() {
                               <div className="text-xs px-1 py-0.5 bg-white/50 rounded text-center">
                                 {subject.category}
                               </div>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="absolute top-1 right-1 w-5 h-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity bg-red-50 hover:bg-red-100 text-red-600"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeleteSubject(
-                                    dayIndex + 1,
-                                    periodIndex + 1,
-                                    subject
-                                  );
-                                }}
-                              >
-                                <X className="h-2.5 w-2.5" />
-                              </Button>
+                              {selectedUser === myUserId && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="absolute top-1 right-1 w-5 h-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity bg-red-50 hover:bg-red-100 text-red-600"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteSubject(
+                                      dayIndex + 1,
+                                      periodIndex + 1,
+                                      subject
+                                    );
+                                  }}
+                                >
+                                  <X className="h-2.5 w-2.5" />
+                                </Button>
+                              )}
                             </CardContent>
                           </Card>
                         ) : (
                           <div className="h-full flex items-center justify-center">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="w-7 h-7 p-0 text-gray-400 hover:text-gray-600 border-dashed bg-transparent"
-                              onClick={() =>
-                                handleAddSubject(dayIndex + 1, periodIndex + 1)
-                              }
-                            >
-                              <Plus className="h-3.5 w-3.5" />
-                            </Button>
+                            {selectedUser === myUserId && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="w-7 h-7 p-0 text-gray-400 hover:text-gray-600 border-dashed bg-transparent"
+                                onClick={() =>
+                                  handleAddSubject(
+                                    dayIndex + 1,
+                                    periodIndex + 1
+                                  )
+                                }
+                              >
+                                <Plus className="h-3.5 w-3.5" />
+                              </Button>
+                            )}
                           </div>
                         )}
                       </div>
