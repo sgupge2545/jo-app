@@ -475,8 +475,9 @@ export default function Home() {
           right: "20px",
           zIndex: 1000,
           display: "flex",
+          flexDirection: "column",
           gap: "10px",
-          alignItems: "center",
+          alignItems: "flex-end",
         }}
       >
         <a
