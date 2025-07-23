@@ -265,7 +265,7 @@ export default function SearchSyllabus() {
             👤 {user.username}
           </div>
           <a
-            href={`${FRONTEND_URL}/auth?action=logout`}
+            href={`${BACKEND_URL}/auth?action=logout`}
             style={{
               display: "inline-block",
               background: "rgba(220, 53, 69, 0.8)",

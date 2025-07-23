@@ -167,14 +167,21 @@ export default function TimetablePage() {
         const usersData = await usersRes.json();
         setUsers(usersData);
 
-        // その後で認証中ユーザーを取得しselectedUserにセット
+        // その後で認証中ユーザーを取得
         const authRes = await fetch(`${BACKEND_URL}/auth?action=check`, {
           credentials: "include",
         });
         if (authRes.ok) {
           const authData = await authRes.json();
           if (authData.authenticated && authData.user && authData.user.id) {
-            setSelectedUser(String(authData.user.id));
+            // usersDataに含まれている場合のみセット
+            if (
+              usersData.some(
+                (u: User) => String(u.id) === String(authData.user.id)
+              )
+            ) {
+              setSelectedUser(String(authData.user.id));
+            }
           }
         }
       } catch (e) {
