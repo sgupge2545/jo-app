@@ -220,6 +220,22 @@ interface User {
   login_time: number;
 }
 
+// CSSスピナーのスタイル（timetableと同じデザイン）
+const spinnerStyles = `
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  .loading-spinner {
+    border: 3px solid #f3f4f6;
+    border-top: 3px solid #3b82f6;
+    border-radius: 50%;
+    width: 48px;
+    height: 48px;
+    animation: spin 1s linear infinite;
+  }
+`;
+
 export default function Home() {
   const [data, setData] = useState<PageData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -322,17 +338,23 @@ export default function Home() {
 
   if (loading) {
     return (
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "100vh",
-          fontSize: "1.2rem",
-        }}
-      >
-        ページを読み込み中...
-      </div>
+      <>
+        <style>{spinnerStyles}</style>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            height: "100vh",
+            fontSize: "1.2rem",
+          }}
+        >
+          <div className="text-center">
+            <div className="loading-spinner mx-auto mb-4"></div>
+            <p className="text-gray-600 text-lg">ページを読み込み中...</p>
+          </div>
+        </div>
+      </>
     );
   }
 

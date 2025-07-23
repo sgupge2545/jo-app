@@ -29,6 +29,7 @@ const spinnerStyles = `
 `;
 import { ArrowLeft, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import {
   Select,
   SelectContent,
@@ -259,6 +260,7 @@ export default function TimetablePage() {
       );
       const data = await timetableRes.json();
       setTimetable(data.timetable);
+      toast.success("追加しました");
     } catch (e) {
       console.error(e);
     }
