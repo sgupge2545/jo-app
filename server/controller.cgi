@@ -20,6 +20,7 @@ from database import (
     insert_timetable_entry,
     delete_timetable_entry,
     get_all_users,
+    get_user_by_id,
 )
 import inspect
 
@@ -326,6 +327,18 @@ def handle_remove_lecture_from_timetable(user_id):
         print_json({"error": f"エラーが発生しました: {str(e)}"}, 500)
 
 
+def handle_get_me():
+    session_data = get_session_data()
+    if not session_data.get("logged_in") or not session_data.get("user_id"):
+        print_json({"error": "認証が必要です"}, 401)
+        return
+    user = get_user_by_id(session_data["user_id"])
+    if not user:
+        print_json({"error": "ユーザーが見つかりません"}, 404)
+        return
+    print_json({"id": user["id"], "name": user["name"]})
+
+
 def main():
     path = os.environ.get("PATH_INFO", "")
     method = os.environ.get("REQUEST_METHOD", "GET")
@@ -355,6 +368,9 @@ def main():
                 check_auth()
             else:
                 check_auth()
+
+        elif path == "/me" and method == "GET":
+            handle_get_me()
 
         # API エンドポイント
         elif path == "/auth/login" and method == "POST":

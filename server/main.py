@@ -19,6 +19,7 @@ from database import (
     insert_timetable_entry,
     delete_timetable_entry,
     get_all_users,
+    get_user_by_id,
 )
 import os
 import secrets
@@ -312,6 +313,17 @@ async def chat(request: RAGRequest):
 def login(request: UserLoginRequest):
     """ユーザーログイン（存在しなければ新規作成）"""
     user = get_or_create_user(uid=request.uid, name=request.name, email=request.email)
+    return UserResponse(**user)
+
+
+@app.get("/api/me", response_model=UserResponse)
+def get_me(session_data: Optional[str] = Cookie(None)):
+    session = get_session_data_from_cookie(session_data)
+    if not session.get("logged_in") or not session.get("user_id"):
+        raise HTTPException(status_code=401, detail="認証が必要です")
+    user = get_user_by_id(session["user_id"])
+    if not user:
+        raise HTTPException(status_code=404, detail="ユーザーが見つかりません")
     return UserResponse(**user)
 
 

@@ -128,6 +128,8 @@ export default function TimetablePage() {
     subject: Subject;
   } | null>(null);
   const [availableSubjects, setAvailableSubjects] = useState<Subject[]>([]);
+  const [availableSubjectsLoading, setAvailableSubjectsLoading] =
+    useState(false);
 
   // ローディング状態
   const [initialLoading, setInitialLoading] = useState(true);
@@ -167,22 +169,13 @@ export default function TimetablePage() {
         const usersData = await usersRes.json();
         setUsers(usersData);
 
-        // その後で認証中ユーザーを取得
-        const authRes = await fetch(`${BACKEND_URL}/auth?action=check`, {
+        // 新APIで認証中ユーザー情報を取得
+        const meRes = await fetch(`${BACKEND_URL}/me`, {
           credentials: "include",
         });
-        if (authRes.ok) {
-          const authData = await authRes.json();
-          if (authData.authenticated && authData.user && authData.user.id) {
-            // usersDataに含まれている場合のみセット
-            if (
-              usersData.some(
-                (u: User) => String(u.id) === String(authData.user.id)
-              )
-            ) {
-              setSelectedUser(String(authData.user.id));
-            }
-          }
+        if (meRes.ok) {
+          const meData = await meRes.json();
+          setSelectedUser(meData.id);
         }
       } catch (e) {
         console.error(e);
@@ -197,9 +190,11 @@ export default function TimetablePage() {
   useEffect(() => {
     if (!isDialogOpen || selectedDay == null || selectedPeriod == null) {
       setAvailableSubjects([]);
+      setAvailableSubjectsLoading(false);
       return;
     }
     const fetchAvailableSubjects = async () => {
+      setAvailableSubjectsLoading(true);
       try {
         const res = await fetch(
           `${BACKEND_URL}/available-lectures?day=${
@@ -212,6 +207,8 @@ export default function TimetablePage() {
       } catch (e) {
         console.error(e);
         setAvailableSubjects([]);
+      } finally {
+        setAvailableSubjectsLoading(false);
       }
     };
     fetchAvailableSubjects();
@@ -343,18 +340,20 @@ export default function TimetablePage() {
             戻る
           </Button>
 
-          <Select value={selectedUser} onValueChange={setSelectedUser}>
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="ユーザーを選択" />
-            </SelectTrigger>
-            <SelectContent>
-              {users.map((user) => (
-                <SelectItem key={user.id} value={user.id}>
-                  {user.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-4">
+            <Select value={selectedUser} onValueChange={setSelectedUser}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="ユーザーを選択" />
+              </SelectTrigger>
+              <SelectContent>
+                {users.map((user) => (
+                  <SelectItem key={user.id} value={user.id}>
+                    {user.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {/* 時間割タイトル */}
@@ -492,39 +491,50 @@ export default function TimetablePage() {
                     value={searchQuery}
                     onValueChange={setSearchQuery}
                   />
-                  <CommandList className="max-h-48">
-                    <CommandEmpty>該当する科目が見つかりません</CommandEmpty>
-                    <CommandGroup>
-                      {availableSubjects
-                        .filter((subject) =>
-                          subjectMatchesQuery(subject, searchQuery)
-                        )
-                        .map((subject) => (
-                          <CommandItem
-                            key={subject.id}
-                            value={subject.name}
-                            onSelect={() =>
-                              setSelectedSubjectId(String(subject.id))
-                            }
-                            className={
-                              selectedSubjectId === String(subject.id)
-                                ? "bg-blue-50"
-                                : ""
-                            }
-                          >
-                            <div className="flex flex-col w-full">
-                              <div className="font-medium">{subject.name}</div>
-                              <div className="text-sm text-gray-600">
-                                {subject.lecturer}
+                  {availableSubjectsLoading ? (
+                    <div className="flex justify-center items-center py-6">
+                      <div className="loading-spinner-small"></div>
+                      <span className="ml-2 text-gray-500 text-sm">
+                        科目情報を取得中...
+                      </span>
+                    </div>
+                  ) : (
+                    <CommandList className="max-h-48">
+                      <CommandEmpty>該当する科目が見つかりません</CommandEmpty>
+                      <CommandGroup>
+                        {availableSubjects
+                          .filter((subject) =>
+                            subjectMatchesQuery(subject, searchQuery)
+                          )
+                          .map((subject) => (
+                            <CommandItem
+                              key={subject.id}
+                              value={subject.name}
+                              onSelect={() =>
+                                setSelectedSubjectId(String(subject.id))
+                              }
+                              className={
+                                selectedSubjectId === String(subject.id)
+                                  ? "bg-blue-50"
+                                  : ""
+                              }
+                            >
+                              <div className="flex flex-col w-full">
+                                <div className="font-medium">
+                                  {subject.name}
+                                </div>
+                                <div className="text-sm text-gray-600">
+                                  {subject.lecturer}
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  {subject.category}
+                                </div>
                               </div>
-                              <div className="text-xs text-gray-500">
-                                {subject.category}
-                              </div>
-                            </div>
-                          </CommandItem>
-                        ))}
-                    </CommandGroup>
-                  </CommandList>
+                            </CommandItem>
+                          ))}
+                      </CommandGroup>
+                    </CommandList>
+                  )}
                 </Command>
               </div>
             </div>
