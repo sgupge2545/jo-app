@@ -1,6 +1,32 @@
 "use client";
 
 import { useState, useEffect } from "react";
+
+// CSSスピナーのスタイル
+const spinnerStyles = `
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  .loading-spinner {
+    border: 3px solid #f3f4f6;
+    border-top: 3px solid #3b82f6;
+    border-radius: 50%;
+    width: 48px;
+    height: 48px;
+    animation: spin 1s linear infinite;
+  }
+  
+  .loading-spinner-small {
+    border: 2px solid #f3f4f6;
+    border-top: 2px solid #3b82f6;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    animation: spin 1s linear infinite;
+  }
+`;
 import { ArrowLeft, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -103,13 +129,19 @@ export default function TimetablePage() {
   } | null>(null);
   const [availableSubjects, setAvailableSubjects] = useState<Subject[]>([]);
 
+  // ローディング状態
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [timetableLoading, setTimetableLoading] = useState(false);
+
   // ユーザー選択時に時間割を取得
   useEffect(() => {
     if (!selectedUser) {
       setTimetable(null);
+      setTimetableLoading(false);
       return;
     }
     const fetchTimetable = async () => {
+      setTimetableLoading(true);
       try {
         const res = await fetch(
           `${BACKEND_URL}/users/${selectedUser}/timetable`
@@ -119,35 +151,40 @@ export default function TimetablePage() {
         setTimetable(data.timetable);
       } catch {
         setTimetable(null);
+      } finally {
+        setTimetableLoading(false);
       }
     };
     fetchTimetable();
   }, [selectedUser]);
 
   useEffect(() => {
-    // 初回マウント時に認証中ユーザーを取得しselectedUserにセット
-    const fetchAuthUser = async () => {
+    // 初回マウント時にユーザーリストを取得してから認証中ユーザーを設定
+    const initializeData = async () => {
       try {
-        const res = await fetch(`${BACKEND_URL}/auth?action=check`, {
+        // まずユーザーリストを取得
+        const usersRes = await fetch(`${BACKEND_URL}/users`);
+        const usersData = await usersRes.json();
+        setUsers(usersData);
+
+        // その後で認証中ユーザーを取得しselectedUserにセット
+        const authRes = await fetch(`${BACKEND_URL}/auth?action=check`, {
           credentials: "include",
         });
-        if (!res.ok) return;
-        const data = await res.json();
-        if (data.authenticated && data.user && data.user.id) {
-          setSelectedUser(String(data.user.id));
+        if (authRes.ok) {
+          const authData = await authRes.json();
+          if (authData.authenticated && authData.user && authData.user.id) {
+            setSelectedUser(String(authData.user.id));
+          }
         }
       } catch (e) {
         console.error(e);
+      } finally {
+        setInitialLoading(false);
       }
     };
-    const fetchUsers = async () => {
-      const res = await fetch(`${BACKEND_URL}/users`);
-      const data = await res.json();
-      setUsers(data);
-    };
 
-    fetchAuthUser();
-    fetchUsers();
+    initializeData();
   }, []);
 
   useEffect(() => {
@@ -268,240 +305,267 @@ export default function TimetablePage() {
     setDeleteTarget(null);
   };
 
-  return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      {/* ヘッダー */}
-      <div className="flex items-center justify-between mb-6">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleBack}
-          className="flex items-center gap-2 bg-transparent"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          戻る
-        </Button>
-
-        <Select value={selectedUser} onValueChange={setSelectedUser}>
-          <SelectTrigger className="w-48">
-            <SelectValue placeholder="ユーザーを選択" />
-          </SelectTrigger>
-          <SelectContent>
-            {users.map((user) => (
-              <SelectItem key={user.id} value={user.id}>
-                {user.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* 時間割タイトル */}
-      <div className="text-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">時間割</h1>
-      </div>
-
-      {/* 時間割テーブル */}
-      <div className="max-w-5xl mx-auto">
-        <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
-          {/* ヘッダー行 */}
-          <div className="grid grid-cols-6 bg-gray-100 border-b">
-            <div className="p-2 text-center font-medium text-gray-700 border-r text-sm">
-              時限
-            </div>
-            {dayNames.map((day, index) => (
-              <div
-                key={index}
-                className="p-2 text-center font-medium text-gray-700 border-r last:border-r-0 text-sm"
-              >
-                {day}曜日
-              </div>
-            ))}
+  // 初期ローディング画面
+  if (initialLoading) {
+    return (
+      <>
+        <style>{spinnerStyles}</style>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="loading-spinner mx-auto mb-4"></div>
+            <p className="text-gray-600 text-lg">データを読み込み中...</p>
           </div>
-
-          {/* 時間割の行 */}
-          {periods.map((period, periodIndex) => (
-            <div
-              key={periodIndex}
-              className="grid grid-cols-6 border-b last:border-b-0"
-            >
-              {/* 時限列 */}
-              <div className="p-2 bg-gray-50 border-r flex flex-col items-center justify-center">
-                <div className="font-medium text-gray-700 text-sm">
-                  {period}
-                </div>
-                <div className="text-xs text-gray-500 mt-1">
-                  {timeSlots[periodIndex]}
-                </div>
-              </div>
-
-              {/* 各曜日の授業 */}
-              {dayNames.map((_, dayIndex) => {
-                const dayKey = (dayIndex + 1).toString();
-                const periodKey = (periodIndex + 1).toString();
-                const subject = timetable?.[dayKey]?.[periodKey] || null;
-
-                return (
-                  <div
-                    key={dayIndex}
-                    className="p-1.5 border-r last:border-r-0 h-[100px]"
-                  >
-                    {subject ? (
-                      <Card
-                        className={`h-full p-1 ${getPeriodColor(
-                          periodIndex + 1
-                        )} group relative`}
-                      >
-                        <CardContent className="p-1 h-full flex gap-1 flex-col justify-between">
-                          <div>
-                            <div className="font-medium leading-tight pr-6">
-                              {subject.name}
-                            </div>
-                            <div className="text-xs text-gray-600">
-                              {subject.lecturer}
-                            </div>
-                          </div>
-                          <div className="text-xs px-1 py-0.5 bg-white/50 rounded text-center">
-                            {subject.category}
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="absolute top-1 right-1 w-5 h-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity bg-red-50 hover:bg-red-100 text-red-600"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteSubject(
-                                dayIndex + 1,
-                                periodIndex + 1,
-                                subject
-                              );
-                            }}
-                          >
-                            <X className="h-2.5 w-2.5" />
-                          </Button>
-                        </CardContent>
-                      </Card>
-                    ) : (
-                      <div className="h-full flex items-center justify-center">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="w-7 h-7 p-0 text-gray-400 hover:text-gray-600 border-dashed bg-transparent"
-                          onClick={() =>
-                            handleAddSubject(dayIndex + 1, periodIndex + 1)
-                          }
-                        >
-                          <Plus className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          ))}
         </div>
-      </div>
+      </>
+    );
+  }
 
-      {/* 科目追加ダイアログ */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>科目を追加</DialogTitle>
-            <p className="text-sm text-gray-600">
-              {selectedDay != null ? `${dayNames[selectedDay - 1]}曜日` : ""}{" "}
-              {selectedPeriod ?? ""}
-              限に追加する科目を選択してください
-            </p>
-          </DialogHeader>
+  return (
+    <>
+      <style>{spinnerStyles}</style>
+      <div className="min-h-screen bg-gray-50 p-4">
+        {/* ヘッダー */}
+        <div className="flex items-center justify-between mb-6">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleBack}
+            className="flex items-center gap-2 bg-transparent"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            戻る
+          </Button>
 
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="subject-search">科目を検索</Label>
-              <Command className="border rounded-md" shouldFilter={false}>
-                <CommandInput
-                  placeholder="科目名で検索..."
-                  value={searchQuery}
-                  onValueChange={setSearchQuery}
-                />
-                <CommandList className="max-h-48">
-                  <CommandEmpty>該当する科目が見つかりません</CommandEmpty>
-                  <CommandGroup>
-                    {availableSubjects
-                      .filter((subject) =>
-                        subjectMatchesQuery(subject, searchQuery)
-                      )
-                      .map((subject) => (
-                        <CommandItem
-                          key={subject.id}
-                          value={subject.name}
-                          onSelect={() =>
-                            setSelectedSubjectId(String(subject.id))
-                          }
-                          className={
-                            selectedSubjectId === String(subject.id)
-                              ? "bg-blue-50"
-                              : ""
-                          }
-                        >
-                          <div className="flex flex-col w-full">
-                            <div className="font-medium">{subject.name}</div>
-                            <div className="text-sm text-gray-600">
-                              {subject.lecturer}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              {subject.category}
-                            </div>
-                          </div>
-                        </CommandItem>
-                      ))}
-                  </CommandGroup>
-                </CommandList>
-              </Command>
+          <Select value={selectedUser} onValueChange={setSelectedUser}>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="ユーザーを選択" />
+            </SelectTrigger>
+            <SelectContent>
+              {users.map((user) => (
+                <SelectItem key={user.id} value={user.id}>
+                  {user.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* 時間割タイトル */}
+        <div className="text-center mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">時間割</h1>
+        </div>
+
+        {/* 時間割テーブル */}
+        <div className="max-w-5xl mx-auto">
+          <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
+            {/* ヘッダー行 */}
+            <div className="grid grid-cols-6 bg-gray-100 border-b">
+              <div className="p-2 text-center font-medium text-gray-700 border-r text-sm">
+                時限
+              </div>
+              {dayNames.map((day, index) => (
+                <div
+                  key={index}
+                  className="p-2 text-center font-medium text-gray-700 border-r last:border-r-0 text-sm"
+                >
+                  {day}曜日
+                </div>
+              ))}
             </div>
-          </div>
 
-          <DialogFooter className="flex gap-2">
-            <Button variant="outline" onClick={handleCancel}>
-              キャンセル
-            </Button>
-            <Button onClick={handleAdd} disabled={!selectedSubjectId}>
-              追加
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            {/* 時間割の行 */}
+            {timetableLoading ? (
+              <div className="p-8 text-center">
+                <div className="loading-spinner-small mx-auto mb-3"></div>
+                <p className="text-gray-600">時間割を読み込み中...</p>
+              </div>
+            ) : (
+              periods.map((period, periodIndex) => (
+                <div
+                  key={periodIndex}
+                  className="grid grid-cols-6 border-b last:border-b-0"
+                >
+                  {/* 時限列 */}
+                  <div className="p-2 bg-gray-50 border-r flex flex-col items-center justify-center">
+                    <div className="font-medium text-gray-700 text-sm">
+                      {period}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      {timeSlots[periodIndex]}
+                    </div>
+                  </div>
 
-      {/* 科目削除確認ダイアログ */}
-      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>科目を削除</DialogTitle>
-          </DialogHeader>
+                  {/* 各曜日の授業 */}
+                  {dayNames.map((_, dayIndex) => {
+                    const dayKey = (dayIndex + 1).toString();
+                    const periodKey = (periodIndex + 1).toString();
+                    const subject = timetable?.[dayKey]?.[periodKey] || null;
 
-          <div className="py-4">
-            {deleteTarget && (
-              <p className="text-sm text-gray-600">
-                <span className="font-medium">{deleteTarget.subject.name}</span>
-                （{deleteTarget.subject.lecturer}）を
-                <span className="font-medium">
-                  {dayNames[deleteTarget.day - 1]}曜日{deleteTarget.period}限
-                </span>
-                から削除しますか？
-              </p>
+                    return (
+                      <div
+                        key={dayIndex}
+                        className="p-1.5 border-r last:border-r-0 h-[100px]"
+                      >
+                        {subject ? (
+                          <Card
+                            className={`h-full p-1 ${getPeriodColor(
+                              periodIndex + 1
+                            )} group relative`}
+                          >
+                            <CardContent className="p-1 h-full flex gap-1 flex-col justify-between">
+                              <div>
+                                <div className="font-medium leading-tight pr-6">
+                                  {subject.name}
+                                </div>
+                                <div className="text-xs text-gray-600">
+                                  {subject.lecturer}
+                                </div>
+                              </div>
+                              <div className="text-xs px-1 py-0.5 bg-white/50 rounded text-center">
+                                {subject.category}
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="absolute top-1 right-1 w-5 h-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity bg-red-50 hover:bg-red-100 text-red-600"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteSubject(
+                                    dayIndex + 1,
+                                    periodIndex + 1,
+                                    subject
+                                  );
+                                }}
+                              >
+                                <X className="h-2.5 w-2.5" />
+                              </Button>
+                            </CardContent>
+                          </Card>
+                        ) : (
+                          <div className="h-full flex items-center justify-center">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-7 h-7 p-0 text-gray-400 hover:text-gray-600 border-dashed bg-transparent"
+                              onClick={() =>
+                                handleAddSubject(dayIndex + 1, periodIndex + 1)
+                              }
+                            >
+                              <Plus className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              ))
             )}
           </div>
+        </div>
 
-          <DialogFooter className="flex gap-2">
-            <Button variant="outline" onClick={handleCancelDelete}>
-              キャンセル
-            </Button>
-            <Button variant="destructive" onClick={handleConfirmDelete}>
-              削除
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+        {/* 科目追加ダイアログ */}
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>科目を追加</DialogTitle>
+              <p className="text-sm text-gray-600">
+                {selectedDay != null ? `${dayNames[selectedDay - 1]}曜日` : ""}{" "}
+                {selectedPeriod ?? ""}
+                限に追加する科目を選択してください
+              </p>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="subject-search">科目を検索</Label>
+                <Command className="border rounded-md" shouldFilter={false}>
+                  <CommandInput
+                    placeholder="科目名で検索..."
+                    value={searchQuery}
+                    onValueChange={setSearchQuery}
+                  />
+                  <CommandList className="max-h-48">
+                    <CommandEmpty>該当する科目が見つかりません</CommandEmpty>
+                    <CommandGroup>
+                      {availableSubjects
+                        .filter((subject) =>
+                          subjectMatchesQuery(subject, searchQuery)
+                        )
+                        .map((subject) => (
+                          <CommandItem
+                            key={subject.id}
+                            value={subject.name}
+                            onSelect={() =>
+                              setSelectedSubjectId(String(subject.id))
+                            }
+                            className={
+                              selectedSubjectId === String(subject.id)
+                                ? "bg-blue-50"
+                                : ""
+                            }
+                          >
+                            <div className="flex flex-col w-full">
+                              <div className="font-medium">{subject.name}</div>
+                              <div className="text-sm text-gray-600">
+                                {subject.lecturer}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {subject.category}
+                              </div>
+                            </div>
+                          </CommandItem>
+                        ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </div>
+            </div>
+
+            <DialogFooter className="flex gap-2">
+              <Button variant="outline" onClick={handleCancel}>
+                キャンセル
+              </Button>
+              <Button onClick={handleAdd} disabled={!selectedSubjectId}>
+                追加
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* 科目削除確認ダイアログ */}
+        <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>科目を削除</DialogTitle>
+            </DialogHeader>
+
+            <div className="py-4">
+              {deleteTarget && (
+                <p className="text-sm text-gray-600">
+                  <span className="font-medium">
+                    {deleteTarget.subject.name}
+                  </span>
+                  （{deleteTarget.subject.lecturer}）を
+                  <span className="font-medium">
+                    {dayNames[deleteTarget.day - 1]}曜日{deleteTarget.period}限
+                  </span>
+                  から削除しますか？
+                </p>
+              )}
+            </div>
+
+            <DialogFooter className="flex gap-2">
+              <Button variant="outline" onClick={handleCancelDelete}>
+                キャンセル
+              </Button>
+              <Button variant="destructive" onClick={handleConfirmDelete}>
+                削除
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </>
   );
 }
