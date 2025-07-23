@@ -142,8 +142,33 @@ function handleCallback() {
     $idToken = $tokenInfo['id_token'];
     $userInfo = decodeJWT($idToken);
     
+    // ユーザー情報を送信
+    $url = 'https://stuext.ai.is.saga-u.ac.jp/~s23238268/api/auth/login';
+    $userData = [
+        'uid' => $userInfo['sub'],
+        'name' => $userInfo['name'] ?? $userInfo['email'],
+        'email' => $userInfo['email']
+    ];
+    
+    $apiOptions = [
+        'http' => [
+            'header' => "Content-Type: application/json\r\n",
+            'method' => 'POST',
+            'content' => json_encode($userData),
+            'timeout' => 30
+        ]
+    ];
+    
+    $apiContext = stream_context_create($apiOptions);
+    $response = file_get_contents($url, false, $apiContext);
+    
+    if ($response !== FALSE) {
+        $user = json_decode($response, true);
+        // ユーザーIDをセッションに保存
+        $_SESSION['user_id'] = $user['id'];
+    }
+    
     // セッションに保存
-    $_SESSION['user_id'] = $userInfo['sub'];
     $_SESSION['username'] = $userInfo['name'] ?? $userInfo['email'];
     $_SESSION['email'] = $userInfo['email'];
     $_SESSION['logged_in'] = true;
@@ -180,6 +205,33 @@ function handleLogout() {
 
 function checkAuth() {
     if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true) {
+        // 認証済みの場合、PythonのAPIでユーザー情報を同期
+        if (!isset($_SESSION['user_id']) || empty($_SESSION['user_id'])) {
+            $url = 'https://stuext.ai.is.saga-u.ac.jp/~s23238268/api/auth/login';
+            $userData = [
+                'uid' => $_SESSION['user_id'] ?? '',  // 元のMicrosoft UID
+                'name' => $_SESSION['username'],
+                'email' => $_SESSION['email']
+            ];
+            
+            $apiOptions = [
+                'http' => [
+                    'header' => "Content-Type: application/json\r\n",
+                    'method' => 'POST',
+                    'content' => json_encode($userData),
+                    'timeout' => 30
+                ]
+            ];
+            
+            $apiContext = stream_context_create($apiOptions);
+            $response = file_get_contents($url, false, $apiContext);
+            
+            if ($response !== FALSE) {
+                $user = json_decode($response, true);
+                $_SESSION['user_id'] = $user['id'];
+            }
+        }
+        
         echo json_encode([
             'authenticated' => true,
             'user' => [
