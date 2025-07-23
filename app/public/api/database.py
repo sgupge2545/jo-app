@@ -410,32 +410,6 @@ def insert_timetable_entry(
             return cursor.lastrowid
 
 
-def get_user_timetable(user_id: int) -> dict:
-    """ユーザーの時間割を取得（辞書形式で返す）"""
-    with get_db_connection() as conn:
-        cursor = conn.cursor()
-        cursor.execute(
-            """
-            SELECT day_of_week, period, lecture_id
-            FROM lecture_timetables 
-            WHERE user_id = ?
-            ORDER BY day_of_week, period
-        """,
-            (user_id,),
-        )
-        rows = cursor.fetchall()
-
-        # 辞書形式に変換
-        timetable = create_empty_timetable()
-        for row in rows:
-            day = str(row[0])
-            period = str(row[1])
-            lecture_id = row[2]
-            timetable[day][period] = lecture_id
-
-        return timetable
-
-
 def get_timetable_with_lecture_details(user_id: int) -> dict:
     """講義詳細情報付きで時間割を取得"""
     with get_db_connection() as conn:

@@ -15,7 +15,6 @@ from service import (
 )
 from database import (
     get_or_create_user,
-    get_user_timetable,
     get_timetable_with_lecture_details,
     insert_timetable_entry,
     delete_timetable_entry,
@@ -105,7 +104,6 @@ def handle_login():
     # Azure Entra ID設定（環境変数から読み込み）
     tenant_id = os.environ.get("MS_TENANT_ID")
     client_id = os.environ.get("MS_CLIENT_ID")
-    client_secret = os.environ.get("MS_CLIENT_SECRET")
     redirect_uri = os.environ.get("MS_REDIRECT_URI")
 
     auth_url = f"https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/authorize"
