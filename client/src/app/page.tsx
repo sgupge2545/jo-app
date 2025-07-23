@@ -483,7 +483,9 @@ export default function Home() {
         <a
           href="/~s23238268/fix-page"
           style={{
-            display: "inline-block",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
             background: "rgba(255, 255, 255, 0.9)",
             color: "#1e3c72",
             padding: "12px 20px",
@@ -493,6 +495,8 @@ export default function Home() {
             boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
             transition: "all 0.3s ease",
             backdropFilter: "blur(10px)",
+            width: "160px",
+            textAlign: "center",
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.background = "rgba(255, 255, 255, 1)";
@@ -513,7 +517,9 @@ export default function Home() {
           <a
             href={`${FRONTEND_URL}/search-syllabus`}
             style={{
-              display: "inline-block",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
               background: "rgba(255, 255, 255, 0.9)",
               color: "#1e3c72",
               padding: "12px 20px",
@@ -523,6 +529,8 @@ export default function Home() {
               boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
               transition: "all 0.3s ease",
               backdropFilter: "blur(10px)",
+              width: "160px",
+              textAlign: "center",
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.background = "rgba(255, 255, 255, 1)";
@@ -542,7 +550,9 @@ export default function Home() {
           <a
             href={`${BACKEND_URL}/auth?action=login&redirect=${FRONTEND_URL}/search-syllabus`}
             style={{
-              display: "inline-block",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
               background: "rgba(255, 255, 255, 0.9)",
               color: "#1e3c72",
               padding: "12px 20px",
@@ -552,6 +562,8 @@ export default function Home() {
               boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
               transition: "all 0.3s ease",
               backdropFilter: "blur(10px)",
+              width: "160px",
+              textAlign: "center",
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.background = "rgba(255, 255, 255, 1)";
@@ -572,9 +584,9 @@ export default function Home() {
         <a
           href="/~s23238268/chat"
           style={{
-            display: "inline-flex",
+            display: "flex",
+            justifyContent: "center",
             alignItems: "center",
-            gap: "8px",
             background: "rgba(255, 255, 255, 0.9)",
             color: "#1e3c72",
             padding: "10px 18px",
@@ -584,6 +596,8 @@ export default function Home() {
             boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
             transition: "all 0.3s ease",
             backdropFilter: "blur(10px)",
+            width: "160px",
+            textAlign: "center",
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.background = "rgba(255, 255, 255, 1)";
@@ -603,7 +617,7 @@ export default function Home() {
             height={50}
             className="rounded-full object-cover"
           />
-          カッチーに聞く
+          カッチー
         </a>
 
         {/* 時間割ボタン */}
@@ -612,9 +626,9 @@ export default function Home() {
           <a
             href={`${FRONTEND_URL}/timetable`}
             style={{
-              display: "inline-flex",
+              display: "flex",
+              justifyContent: "center",
               alignItems: "center",
-              gap: "8px",
               background: "rgba(255, 255, 255, 0.9)",
               color: "#1e3c72",
               padding: "10px 18px",
@@ -624,6 +638,8 @@ export default function Home() {
               boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
               transition: "all 0.3s ease",
               backdropFilter: "blur(10px)",
+              width: "160px",
+              textAlign: "center",
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.background = "rgba(255, 255, 255, 1)";
@@ -643,9 +659,9 @@ export default function Home() {
           <a
             href={`${BACKEND_URL}/auth?action=login&redirect=${FRONTEND_URL}/timetable`}
             style={{
-              display: "inline-flex",
+              display: "flex",
+              justifyContent: "center",
               alignItems: "center",
-              gap: "8px",
               background: "rgba(255, 255, 255, 0.9)",
               color: "#1e3c72",
               padding: "10px 18px",
@@ -655,6 +671,8 @@ export default function Home() {
               boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
               transition: "all 0.3s ease",
               backdropFilter: "blur(10px)",
+              width: "160px",
+              textAlign: "center",
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.background = "rgba(255, 255, 255, 1)";
