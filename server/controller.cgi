@@ -21,6 +21,7 @@ from database import (
     get_all_users,
     delete_user_timetable,
 )
+import inspect
 
 
 def print_json(obj, status=200):
@@ -174,6 +175,7 @@ def handle_callback():
         "code": code,
         "grant_type": "authorization_code",
         "redirect_uri": f"{redirect_uri}?action=callback",
+        "scope": "openid profile email",
     }
 
     try:
@@ -181,6 +183,9 @@ def handle_callback():
         token_info = response.json()
 
         # IDトークンからユーザー情報を取得
+        if "id_token" not in token_info:
+            print_json({"error": f"id_tokenが返されませんでした: {token_info}"}, 400)
+            return
         id_token = token_info["id_token"]
         user_info = jwt.decode(id_token, options={"verify_signature": False})
 
@@ -357,30 +362,39 @@ def main():
                 check_auth()
 
         # API エンドポイント
-        elif path == "/api/auth/login" and method == "POST":
+        elif path == "/auth/login" and method == "POST":
             handle_user_login()
         elif (
-            path.startswith("/api/users/")
+            path.startswith("/users/")
             and path.endswith("/timetable")
             and method == "GET"
         ):
             user_id = int(path.split("/")[-2])
             handle_get_timetable(user_id)
-        elif path.startswith("/api/timetables/") and method == "GET":
+        elif path.startswith("/timetables/") and method == "GET":
             user_id = int(path.split("/")[-1])
             handle_get_timetable_by_id(user_id)
-        elif path.startswith("/api/timetables/") and method == "PUT":
+        elif path.startswith("/timetables/") and method == "PUT":
             user_id = int(path.split("/")[-1])
             handle_update_timetable(user_id)
-        elif path.startswith("/api/timetables/") and method == "DELETE":
+        elif path.startswith("/timetables/") and method == "DELETE":
             user_id = int(path.split("/")[-1])
             handle_delete_timetable(user_id)
-        elif path == "/api/users" and method == "GET":
+        elif path == "/users" and method == "GET":
             handle_get_users()
 
         # 既存のエンドポイント
         elif path == "/lectures" and method == "GET":
-            result = get_lectures_service(**query)
+            sig = inspect.signature(get_lectures_service)
+            allowed_keys = set(sig.parameters.keys())
+            filtered_query = {k: v for k, v in query.items() if k in allowed_keys}
+            result = get_lectures_service(**filtered_query)
+            print_json(result)
+        elif path == "/available-lectures" and method == "GET":
+            sig = inspect.signature(get_lectures_service)
+            allowed_keys = set(sig.parameters.keys())
+            filtered_query = {k: v for k, v in query.items() if k in allowed_keys}
+            result = get_lectures_service(**filtered_query)
             print_json(result)
         elif path.startswith("/syllabuses/") and method == "GET":
             code = path.split("/")[-1]
