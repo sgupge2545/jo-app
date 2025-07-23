@@ -1,4 +1,6 @@
-import requests
+import httpx
+import base64
+import json
 from fastapi import FastAPI, Query, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
@@ -85,23 +87,34 @@ class TimetableUpdateRequest(BaseModel):
     lecture_id: Optional[int] = None  # nullの場合は空き時間
 
 
-def verify_php_auth(cookie: str = Header(None)) -> Optional[Dict]:
-    """PHPの認証エンドポイントで認証を確認"""
+def verify_auth(cookie: str = Header(None)) -> Optional[Dict]:
+    """Cookieから直接セッション情報を解析して認証を確認"""
     if not cookie:
         return None
 
     try:
-        # PHPの認証エンドポイントを呼び出し
-        response = requests.get(
-            "https://stuext.ai.is.saga-u.ac.jp/~s23238268/auth.php?action=check",
-            headers={"Cookie": cookie},
-            timeout=10,
-        )
+        # Cookieからセッションデータを抽出
+        session_data = {}
+        for item in cookie.split(";"):
+            if "=" in item:
+                key, value = item.strip().split("=", 1)
+                if key == "session_data":
+                    try:
+                        session_data = json.loads(
+                            base64.b64decode(value).decode("utf-8")
+                        )
+                    except:
+                        pass
+                    break
 
-        if response.status_code == 200:
-            auth_data = response.json()
-            if auth_data.get("authenticated"):
-                return auth_data.get("user")
+        # 認証状態を確認
+        if session_data.get("logged_in") and session_data.get("user_id"):
+            return {
+                "id": session_data["user_id"],
+                "username": session_data.get("username", ""),
+                "email": session_data.get("email", ""),
+                "login_time": session_data.get("login_time", 0),
+            }
 
         return None
     except Exception:
@@ -177,12 +190,12 @@ def get_user_timetable_simple(user_id: int):
 
 
 @app.put("/api/timetables/{user_id}")
-def update_timetable_slot_authenticated(
+async def update_timetable_slot_authenticated(
     user_id: int, request: TimetableUpdateRequest, cookie: str = Header(None)
 ):
     """特定の時間帯の講義を更新（認証付き）"""
     # PHP認証を確認
-    auth_user = verify_php_auth(cookie)
+    auth_user = verify_auth(cookie)
     if not auth_user:
         raise HTTPException(status_code=401, detail="認証に失敗しました")
 
@@ -212,10 +225,10 @@ def update_timetable_slot_authenticated(
 
 
 @app.delete("/api/timetables/{user_id}")
-def delete_user_timetable_authenticated(user_id: int, cookie: str = Header(None)):
+async def delete_user_timetable_authenticated(user_id: int, cookie: str = Header(None)):
     """ユーザーの時間割を全て削除（認証付き）"""
     # PHP認証を確認
-    auth_user = verify_php_auth(cookie)
+    auth_user = verify_auth(cookie)
     if not auth_user:
         raise HTTPException(status_code=401, detail="認証に失敗しました")
 

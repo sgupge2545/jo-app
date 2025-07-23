@@ -231,7 +231,9 @@ export default function Home() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const response = await fetch("/~s23238268/auth.php?action=check");
+        const response = await fetch(
+          "/~s23238268/controller.cgi/auth?action=check"
+        );
         if (response.ok) {
           const authData = await response.json();
           if (authData.authenticated) {
@@ -403,7 +405,7 @@ export default function Home() {
               👤 {user.username}
             </div>
             <a
-              href="/~s23238268/auth.php?action=logout"
+              href="/~s23238268/controller.cgi/auth?action=logout"
               style={{
                 display: "inline-block",
                 background: "rgba(220, 53, 69, 0.9)",
@@ -434,7 +436,7 @@ export default function Home() {
         ) : (
           // 未ログインの場合：ログインボタン
           <a
-            href="https://stuext.ai.is.saga-u.ac.jp/~s23238268/auth.php?action=login&redirect=/~s23238268/"
+            href="https://stuext.ai.is.saga-u.ac.jp/~s23238268/controller.cgi/auth?action=login&redirect=/~s23238268/"
             style={{
               display: "inline-block",
               background: "rgba(30, 60, 114, 0.9)",
@@ -536,7 +538,7 @@ export default function Home() {
         ) : (
           // 未ログインの場合：認証付きシラバス検索ボタン
           <a
-            href="https://stuext.ai.is.saga-u.ac.jp/~s23238268/auth.php?action=login&redirect=/~s23238268/search-syllabus"
+            href="https://stuext.ai.is.saga-u.ac.jp/~s23238268/controller.cgi/auth?action=login&redirect=/~s23238268/search-syllabus"
             style={{
               display: "inline-block",
               background: "rgba(255, 255, 255, 0.9)",
@@ -601,6 +603,71 @@ export default function Home() {
           />
           カッチーに聞く
         </a>
+
+        {/* 時間割ボタン */}
+        {!authLoading && user ? (
+          // ログイン済みの場合：時間割ボタン
+          <a
+            href="/~s23238268/timetable"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              background: "rgba(255, 255, 255, 0.9)",
+              color: "#1e3c72",
+              padding: "10px 18px",
+              textDecoration: "none",
+              borderRadius: "25px",
+              fontWeight: "bold",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+              transition: "all 0.3s ease",
+              backdropFilter: "blur(10px)",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "rgba(255, 255, 255, 1)";
+              e.currentTarget.style.transform = "translateY(-2px)";
+              e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.2)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "rgba(255, 255, 255, 0.9)";
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.15)";
+            }}
+          >
+            📅 時間割
+          </a>
+        ) : (
+          // 未ログインの場合：認証付き時間割ボタン
+          <a
+            href="https://stuext.ai.is.saga-u.ac.jp/~s23238268/controller.cgi/auth?action=login&redirect=/~s23238268/timetable"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              background: "rgba(255, 255, 255, 0.9)",
+              color: "#1e3c72",
+              padding: "10px 18px",
+              textDecoration: "none",
+              borderRadius: "25px",
+              fontWeight: "bold",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+              transition: "all 0.3s ease",
+              backdropFilter: "blur(10px)",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "rgba(255, 255, 255, 1)";
+              e.currentTarget.style.transform = "translateY(-2px)";
+              e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.2)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "rgba(255, 255, 255, 0.9)";
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.15)";
+            }}
+          >
+            📅 時間割
+          </a>
+        )}
       </div>
 
       {/* AIが生成したHTMLコンテンツを動的にレンダリング */}
