@@ -71,7 +71,7 @@ echo <<<HTML
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>ユーザーHP一覧</title>
+  <title>ギャラリー</title>
   <style>
     body {
       font-family: sans-serif;
