@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{user}} - Website Gallery</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 40px 80px;
+      }
+
+      .site-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+
+      .site-title {
+        font-size: 2rem;
+        font-weight: 600;
+        color: white;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+      }
+
+      .external-link {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        padding: 12px 24px;
+        border-radius: 25px;
+        text-decoration: none;
+        font-size: 1rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(10px);
+      }
+
+      .external-link:hover {
+        background: rgba(255, 255, 255, 0.3);
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+      }
+
+      .iframe-container {
+        position: relative;
+        height: 600px;
+        background: white;
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+        margin-bottom: 80px;
+      }
+
+      .iframe-container:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 30px 60px rgba(0, 0, 0, 0.2);
+      }
+
+      .iframe-container iframe {
+        width: 100%;
+        height: 100%;
+        border: none;
+      }
+
+      .loading {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f8f9fa;
+        color: #666;
+        font-size: 1.1rem;
+        z-index: 1;
+      }
+
+      .spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #667eea;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-right: 15px;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      .floating-elements {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: -1;
+      }
+
+      .floating-circle {
+        position: absolute;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.1);
+        animation: float 6s ease-in-out infinite;
+      }
+
+      .floating-circle:nth-child(1) {
+        width: 80px;
+        height: 80px;
+        top: 20%;
+        left: 10%;
+        animation-delay: 0s;
+      }
+
+      .floating-circle:nth-child(2) {
+        width: 120px;
+        height: 120px;
+        top: 60%;
+        right: 15%;
+        animation-delay: 2s;
+      }
+
+      .floating-circle:nth-child(3) {
+        width: 60px;
+        height: 60px;
+        bottom: 20%;
+        left: 20%;
+        animation-delay: 4s;
+      }
+
+      @keyframes float {
+        0%,
+        100% {
+          transform: translateY(0px) rotate(0deg);
+        }
+        50% {
+          transform: translateY(-20px) rotate(180deg);
+        }
+      }
+
+      @media (max-width: 1024px) {
+        body {
+          padding: 30px 60px;
+        }
+      }
+
+      @media (max-width: 768px) {
+        body {
+          padding: 20px 40px;
+        }
+
+        .iframe-container {
+          height: 400px;
+          margin-bottom: 60px;
+        }
+
+        .site-header {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 15px;
+        }
+
+        .site-title {
+          font-size: 1.6rem;
+        }
+      }
+
+      @media (max-width: 480px) {
+        body {
+          padding: 15px 20px;
+        }
+
+        .iframe-container {
+          height: 300px;
+          margin-bottom: 40px;
+        }
+
+        .site-title {
+          font-size: 1.4rem;
+        }
+
+        .external-link {
+          padding: 10px 20px;
+          font-size: 0.9rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="floating-elements">
+      <div class="floating-circle"></div>
+      <div class="floating-circle"></div>
+      <div class="floating-circle"></div>
+    </div>
+
+    <div class="site-header">
+      <div class="site-title">{{user}}</div>
+      <a href="{{url}}" target="_blank" class="external-link">Open Site ↗</a>
+    </div>
+
+    <div class="iframe-container">
+      <div class="loading">
+        <div class="spinner"></div>
+        Loading website...
+      </div>
+      <iframe
+        src="{{url}}"
+        onload="this.previousElementSibling.style.display='none'"
+      ></iframe>
+    </div>
+
+    <script>
+      // スムーズなアニメーション効果
+      document.addEventListener("DOMContentLoaded", function () {
+        const elements = document.querySelectorAll(
+          ".site-header, .iframe-container"
+        );
+
+        const observer = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((entry, index) => {
+              if (entry.isIntersecting) {
+                setTimeout(() => {
+                  entry.target.style.opacity = "1";
+                  entry.target.style.transform = "translateY(0)";
+                }, index * 150);
+              }
+            });
+          },
+          {
+            threshold: 0.1,
+          }
+        );
+
+        elements.forEach((element) => {
+          element.style.opacity = "0";
+          element.style.transform = "translateY(30px)";
+          element.style.transition = "all 0.6s ease";
+          observer.observe(element);
+        });
+      });
+
+      // iframeのエラーハンドリング
+      document.querySelectorAll("iframe").forEach((iframe) => {
+        iframe.addEventListener("error", function () {
+          const loading = this.previousElementSibling;
+          if (loading && loading.classList.contains("loading")) {
+            loading.innerHTML =
+              '<div style="color: #e74c3c; font-weight: 500;">Failed to load website</div>';
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

@@ -710,6 +710,39 @@ export default function Home() {
             📅 時間割
           </a>
         )}
+
+        {/* ギャラリーボタン */}
+        <a
+          href="/~s23238268/gallery.php"
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            background: "rgba(255, 255, 255, 0.9)",
+            color: "#1e3c72",
+            padding: "10px 18px",
+            textDecoration: "none",
+            borderRadius: "25px",
+            fontWeight: "bold",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+            transition: "all 0.3s ease",
+            backdropFilter: "blur(10px)",
+            width: "160px",
+            textAlign: "center",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "rgba(255, 255, 255, 1)";
+            e.currentTarget.style.transform = "translateY(-2px)";
+            e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.2)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "rgba(255, 255, 255, 0.9)";
+            e.currentTarget.style.transform = "translateY(0)";
+            e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.15)";
+          }}
+        >
+          🖼️ ギャラリー
+        </a>
       </div>
 
       {/* AIが生成したHTMLコンテンツを動的にレンダリング */}
