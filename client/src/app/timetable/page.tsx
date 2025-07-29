@@ -133,6 +133,16 @@ export default function TimetablePage() {
   const [availableSubjectsLoading, setAvailableSubjectsLoading] =
     useState(false);
 
+  // シラバスモーダル用の状態
+  const [syllabusModalOpen, setSyllabusModalOpen] = useState(false);
+  const [syllabusModalHtml, setSyllabusModalHtml] = useState<string | null>(
+    null
+  );
+  const [syllabusModalLoading, setSyllabusModalLoading] = useState(false);
+  const [syllabusModalError, setSyllabusModalError] = useState<string | null>(
+    null
+  );
+
   // ローディング状態
   const [initialLoading, setInitialLoading] = useState(true);
   const [timetableLoading, setTimetableLoading] = useState(false);
@@ -313,6 +323,26 @@ export default function TimetablePage() {
     setDeleteTarget(null);
   };
 
+  // シラバスモーダルを開く
+  const handleSyllabusClick = async (code: string) => {
+    setSyllabusModalOpen(true);
+    setSyllabusModalHtml(null);
+    setSyllabusModalLoading(true);
+    setSyllabusModalError(null);
+    try {
+      const res = await fetch(`${BACKEND_URL}/syllabuses/${code}`);
+      if (!res.ok) throw new Error("シラバスの取得に失敗しました");
+      const html = await res.text();
+      setSyllabusModalHtml(html);
+    } catch (e) {
+      setSyllabusModalError(
+        e instanceof Error ? e.message : "エラーが発生しました"
+      );
+    } finally {
+      setSyllabusModalLoading(false);
+    }
+  };
+
   // 初期ローディング画面
   if (initialLoading) {
     return (
@@ -420,7 +450,11 @@ export default function TimetablePage() {
                           <Card
                             className={`h-full p-1 ${getPeriodColor(
                               periodIndex + 1
-                            )} group relative`}
+                            )} group relative cursor-pointer hover:shadow-md transition-shadow`}
+                            onClick={() =>
+                              subject.code && handleSyllabusClick(subject.code)
+                            }
+                            title="クリックでシラバス詳細を表示"
                           >
                             <CardContent className="p-1 h-full flex gap-1 flex-col justify-between">
                               <div>
@@ -593,6 +627,88 @@ export default function TimetablePage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* シラバス詳細モーダル */}
+        {syllabusModalOpen && (
+          <div
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              width: "100vw",
+              height: "100vh",
+              background: "rgba(0,0,0,0.5)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 1000,
+            }}
+            onClick={() => setSyllabusModalOpen(false)}
+          >
+            <div
+              style={{
+                background: "white",
+                borderRadius: "8px",
+                padding: "30px",
+                maxWidth: "90vw",
+                maxHeight: "90vh",
+                overflow: "auto",
+                position: "relative",
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setSyllabusModalOpen(false)}
+                style={{
+                  position: "absolute",
+                  top: 10,
+                  right: 10,
+                  background: "#1e3c72",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "50%",
+                  width: "32px",
+                  height: "32px",
+                  fontSize: "18px",
+                  cursor: "pointer",
+                }}
+              >
+                ×
+              </button>
+              {syllabusModalLoading && (
+                <div className="flex justify-center items-center py-8">
+                  <div className="loading-spinner-small"></div>
+                  <span className="ml-2 text-gray-500 text-sm">
+                    シラバスを読み込み中...
+                  </span>
+                </div>
+              )}
+              {syllabusModalError && (
+                <div style={{ color: "red" }}>{syllabusModalError}</div>
+              )}
+              {syllabusModalHtml && (
+                <div
+                  style={{
+                    minWidth: "300px",
+                    padding: "10px",
+                    background: "#f9f9f9",
+                    borderRadius: "8px",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                  }}
+                >
+                  <h2 style={{ color: "#1e3c72", marginTop: 0 }}>
+                    シラバス詳細
+                  </h2>
+                  <hr style={{ margin: "10px 0 20px 0" }} />
+                  <div
+                    className="syllabus-html"
+                    dangerouslySetInnerHTML={{ __html: syllabusModalHtml }}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </>
   );
