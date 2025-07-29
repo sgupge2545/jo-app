@@ -69,9 +69,10 @@ $currentUsers = array_slice($allUsers, $startIndex, $itemsPerPage);
 echo <<<HTML
 <!DOCTYPE html>
 <html lang="ja">
-<head>
-  <meta charset="UTF-8">
-  <title>ギャラリー</title>
+  <head>
+    <meta charset="UTF-8">
+    <title>ギャラリー</title>
+    <link rel="icon" href="https://stuext.ai.is.saga-u.ac.jp/~s23238268/favicon.ico" type="image/x-icon">
   <style>
     body {
       font-family: sans-serif;
