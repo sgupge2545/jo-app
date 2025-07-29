@@ -213,10 +213,8 @@
     </div>
 
     <div class="site-header">
-      <div class="site-title" id="user-title">{{user}}</div>
-      <a href="{{url}}" target="_blank" class="external-link" id="external-link"
-        >Open Site ↗</a
-      >
+      <div class="site-title">{{user}}</div>
+      <a href="{{url}}" target="_blank" class="external-link">Open Site ↗</a>
     </div>
 
     <div class="iframe-container">
@@ -227,51 +225,10 @@
       <iframe
         src="{{url}}"
         onload="this.previousElementSibling.style.display='none'"
-        id="website-iframe"
       ></iframe>
     </div>
 
     <script>
-      // URLパラメータから値を取得する関数
-      function getUrlParameter(name) {
-        name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
-        var regex = new RegExp("[\\?&]" + name + "=([^&#]*)");
-        var results = regex.exec(location.search);
-        return results === null
-          ? ""
-          : decodeURIComponent(results[1].replace(/\+/g, " "));
-      }
-
-      // ページ読み込み時にテンプレートを置換
-      document.addEventListener("DOMContentLoaded", function () {
-        // URLパラメータから値を取得
-        const user = getUrlParameter("user") || "Unknown User";
-        const url =
-          getUrlParameter("url") ||
-          "https://stuext.ai.is.saga-u.ac.jp/~" + user;
-
-        // タイトルを更新
-        document.title = user + " - Website Gallery";
-
-        // ユーザー名を更新
-        const userTitle = document.getElementById("user-title");
-        if (userTitle) {
-          userTitle.textContent = user;
-        }
-
-        // 外部リンクを更新
-        const externalLink = document.getElementById("external-link");
-        if (externalLink) {
-          externalLink.href = url;
-        }
-
-        // iframeのsrcを更新
-        const iframe = document.getElementById("website-iframe");
-        if (iframe) {
-          iframe.src = url;
-        }
-      });
-
       // スムーズなアニメーション効果
       document.addEventListener("DOMContentLoaded", function () {
         const elements = document.querySelectorAll(
